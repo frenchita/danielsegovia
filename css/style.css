@@ -127,6 +127,11 @@ i {
 #curso{
     width: 65%;
 }
+
+#curso > h3 {
+    margin-top: 25px;
+}
+
 #inscripcion{
     width: 35%;
 }
