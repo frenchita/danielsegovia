@@ -19,6 +19,7 @@ time, mark, audio, video {
 	font-size: 100%;
 	font: inherit;
 	vertical-align: baseline;
+    font-weight: 300;
 }
 /* HTML5 display-role reset for older browsers */
 article, aside, details, figcaption, figure, 
@@ -58,6 +59,10 @@ h1, h2, h3, h4, h5, h6, p {
     line-height: 1.7em;
 }
 
+h1, h2, h3, h4, h5, h6{ 
+    font-weight: 500;
+}
+
 header {
     margin: auto;
     display: flex;
@@ -89,11 +94,32 @@ i {
     color: #1756e1;
 }
 
+.fa-envelope, .fa-linkedin, .fa-instagram, .fa-tiktok {
+    font-size: 1.6rem;
+}
+
+.fa-envelope{
+    color: #000;
+}
+
+.fa-instagram {
+    color: transparent;
+    background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    background: -webkit-radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    background-clip: text;
+    -webkit-background-clip: text;
+}
+.fa-tiktok {
+    color: #111111;
+    filter: drop-shadow(2px 0px 0px #FD3E3E) drop-shadow(-2px -2px 0px #4DE8F4);
+}
+
 .flex-columns{
     display: flex;
     flex-direction: row;
     gap: 120px;
 }
+
 
 .flex-columns > div{
     width: 50%;
@@ -110,3 +136,26 @@ i {
     flex-direction: row;
     gap: 10px
 }
+
+strong{
+    font-weight: bold;
+}
+
+
+@media (max-width: 768px) {
+    .flex-columns{
+        flex-direction: column;
+        gap: 0px;
+    }
+    
+    
+    .flex-columns > div{
+        width: 100%;
+    }
+    #curso{
+        width: 100%;
+    }
+    #inscripcion{
+        width: 100%;
+    }
+  }
