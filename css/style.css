@@ -101,7 +101,7 @@ i {
     color: #1756e1;
 }
 
-.fa-envelope, .fa-linkedin, .fa-instagram, .fa-tiktok {
+.fa-envelope, .fa-linkedin, .fa-instagram, .fa-tiktok, .fa-youtube {
     font-size: 1.6rem;
 }
 
@@ -119,6 +119,10 @@ i {
 .fa-tiktok {
     color: #111111;
     filter: drop-shadow(2px 0px 0px #FD3E3E) drop-shadow(-2px -2px 0px #4DE8F4);
+}
+
+.fa-youtube {
+    color: #f00;
 }
 
 .flex-columns{
