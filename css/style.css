@@ -38,6 +38,10 @@ body {
 }
 
 
+article:not(:first-child){
+    margin-top: 80px;
+}
+
 ol, ul {
 	list-style: none;
 }
@@ -60,7 +64,7 @@ h1, h2, h3, h4, h5, h6, p {
 }
 
 h1, h2, h3, h4, h5, h6{ 
-    font-weight: 500;
+    font-weight: bold;
 }
 
 header {
@@ -87,8 +91,11 @@ h2{
 h3{
     font-size: 1.4em;
 }
-p{
+p, li{
     font-size: 1.1em;	
+}
+li{
+    margin-top: 10px;
 }
 i {
     color: #1756e1;
@@ -124,16 +131,17 @@ i {
 .flex-columns > div{
     width: 50%;
 }
-#curso{
-    width: 65%;
+
+.column65{
+    width: 65%!important;;
 }
 
-#curso > h3 {
+.column65 > h3 {
     margin-top: 25px;
 }
 
-#inscripcion{
-    width: 35%;
+.column35{
+    width: 35%!important;
 }
 
 .contact{
@@ -157,10 +165,10 @@ strong{
     .flex-columns > div{
         width: 100%;
     }
-    #curso{
-        width: 100%;
+    .column65 {
+        width: 100%!important;
     }
-    #inscripcion{
-        width: 100%;
+    .column35 {
+        width: 100%!important;
     }
   }
