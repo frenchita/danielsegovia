@@ -131,6 +131,9 @@ i {
     gap: 120px;
 }
 
+.fa-circle-right{
+    margin-right: 5px;
+}
 
 .flex-columns > div{
     width: 50%;
