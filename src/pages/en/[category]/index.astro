@@ -1,0 +1,15 @@
+---
+import CategoryView from '../../../views/CategoryView.astro';
+import { categoryPages } from '../../../lib/content';
+
+export async function getStaticPaths() {
+  const pages = await categoryPages('en');
+  return pages
+    .filter((p) => p.page === 1)
+    .map((p) => ({ params: { category: p.category.en.slug }, props: p }));
+}
+
+const { category, page, totalPages, entries } = Astro.props;
+---
+
+<CategoryView locale="en" category={category} page={page} totalPages={totalPages} entries={entries} />

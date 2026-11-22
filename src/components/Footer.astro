@@ -1,0 +1,72 @@
+---
+import { CATEGORIES, type Locale } from '../lib/categories';
+import { categoryHasPage, categoryUrl } from '../lib/content';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { AUTHOR, SOCIALS } from '../lib/site';
+
+interface Props {
+  locale: Locale;
+  alternates?: Partial<Record<Locale, string>>;
+}
+const { locale, alternates = {} } = Astro.props;
+const ui = t(locale);
+const other: Locale = locale === 'es' ? 'en' : 'es';
+// El selector de idioma lleva a la página equivalente; si no existe, al home del otro idioma.
+const otherHref = alternates[other] ?? STATIC_PATHS.home[other];
+const year = new Date().getFullYear();
+
+const cats = await Promise.all(
+  CATEGORIES.map(async (c) => {
+    const own = await categoryHasPage(locale, c);
+    return { name: c[locale].name, href: own ? categoryUrl(locale, c) : categoryUrl('es', c), lang: own ? undefined : 'es' };
+  }),
+);
+---
+
+<footer class="site-footer">
+  <div class="container cols">
+    <section>
+      <p class="brand">Daniel Segovia</p>
+      <p class="muted">{ui.siteTagline}</p>
+      <p>
+        <a href={otherHref} hreflang={other} lang={other} rel="alternate">{ui.otherLangLabel}</a>
+      </p>
+    </section>
+    <nav aria-label={ui.mainNav}>
+      <h2>{ui.mainNav}</h2>
+      <ul>{cats.map((c) => <li><a href={c.href} hreflang={c.lang}>{c.name}</a></li>)}</ul>
+    </nav>
+    <nav aria-label={ui.footerNav}>
+      <h2>{ui.footerNav}</h2>
+      <ul>
+        <li><a href={STATIC_PATHS.about[locale]}>{ui.about}</a></li>
+        <li><a href={STATIC_PATHS.search[locale]}>{ui.search}</a></li>
+        <li><a href={STATIC_PATHS.rss[locale]}>RSS</a></li>
+      </ul>
+    </nav>
+    <nav aria-label={ui.social}>
+      <h2>{ui.social}</h2>
+      <ul>
+        {SOCIALS.map((s) => <li><a href={s.url} rel="me noopener" target="_blank">{s.name}</a></li>)}
+        <li><a href={`mailto:${AUTHOR.email}`}>{ui.email}</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="container legal muted">© {year} Daniel Segovia. {ui.rights}</div>
+</footer>
+
+<style>
+  .site-footer { border-top: 3px solid var(--line); margin-top: 4rem; padding: 2rem 0 1.5rem; font-size: 0.92rem; }
+  .cols { display: grid; gap: 1.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cols > section { grid-column: 1 / -1; }
+  @media (min-width: 768px) {
+    .cols { grid-template-columns: 2fr 1fr 1fr 1fr; }
+    .cols > section { grid-column: auto; }
+  }
+  .brand { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem; }
+  h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.6rem; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li a { display: inline-block; padding: 0.3rem 0; text-decoration: none; }
+  li a:hover { text-decoration: underline; }
+  .legal { margin-top: 2rem; font-size: 0.82rem; }
+</style>

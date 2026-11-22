@@ -1,0 +1,52 @@
+---
+// Búsqueda estática con Pagefind: el índice se genera en el build y el JS solo se carga en esta página.
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import type { Locale } from '../lib/categories';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { ogPath } from '../lib/content';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = t(locale);
+const path = STATIC_PATHS.search[locale];
+---
+
+<Base
+  locale={locale}
+  title={ui.searchTitle}
+  description={ui.searchDescription}
+  path={path}
+  alternates={STATIC_PATHS.search}
+  ogImage={ogPath(`${locale}/home`)}
+  noindex
+>
+  <link slot="head" rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <Breadcrumbs crumbs={[{ name: ui.home, path: STATIC_PATHS.home[locale] }, { name: ui.search, path }]} label={ui.breadcrumb} />
+  <h1 class="page-title">{ui.search}</h1>
+  <div id="search"></div>
+  <script is:inline src="/pagefind/pagefind-ui.js"></script>
+  <script is:inline>
+    (function () {
+      var ui = new PagefindUI({ element: '#search', showSubResults: true, showImages: false, resetStyles: false });
+      var q = new URLSearchParams(location.search).get('q');
+      if (q) ui.triggerSearch(q);
+    })();
+  </script>
+</Base>
+
+<style is:global>
+  #search {
+    --pagefind-ui-scale: 0.9;
+    --pagefind-ui-primary: var(--accent);
+    --pagefind-ui-text: var(--fg);
+    --pagefind-ui-background: var(--bg);
+    --pagefind-ui-border: var(--line);
+    --pagefind-ui-tag: var(--code-bg);
+    --pagefind-ui-border-radius: 6px;
+    --pagefind-ui-font: var(--font);
+    min-height: 60vh;
+  }
+</style>

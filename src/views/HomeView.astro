@@ -1,0 +1,79 @@
+---
+import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import CategoryGrid from '../components/CategoryGrid.astro';
+import photo from '../assets/daniel-segovia.jpeg';
+import type { Locale } from '../lib/categories';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { graph, person, website } from '../lib/schema';
+import { ogPath } from '../lib/content';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = t(locale);
+const path = STATIC_PATHS.home[locale];
+const jsonld = graph([website(locale), person(locale, photo.src)]);
+---
+
+<Base
+  locale={locale}
+  title={ui.homeTitle}
+  description={ui.homeDescription}
+  path={path}
+  alternates={STATIC_PATHS.home}
+  ogImage={ogPath(`${locale}/home`)}
+  jsonld={jsonld}
+>
+  <section class="hero">
+    <div class="id">
+      <h1>Daniel Segovia</h1>
+      <p class="role">{locale === 'es' ? 'CTO · Líder de tecnología' : 'CTO · Technology leader'}</p>
+    </div>
+    <Picture
+      src={photo}
+      alt={ui.photoAlt}
+      formats={['avif', 'webp']}
+      widths={[96, 192, 240, 480]}
+      sizes="(min-width: 768px) 240px, 96px"
+      width={240}
+      height={240}
+      loading="eager"
+      fetchpriority="high"
+      pictureAttributes={{ class: 'photo' }}
+    />
+    <div class="text">
+      <p class="intro">{ui.homeIntro}</p>
+      <a class="more" href={STATIC_PATHS.about[locale]}>{ui.about} →</a>
+    </div>
+  </section>
+
+  <h2 class="section-title rainbow">{ui.latest}</h2>
+  <CategoryGrid locale={locale} level={3} />
+</Base>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 88px;
+    grid-template-areas: 'id photo' 'text text';
+    gap: 1rem 1.25rem;
+    align-items: center;
+    margin-top: 2rem;
+  }
+  .id { grid-area: id; }
+  .text { grid-area: text; }
+  .hero :global(.photo) { grid-area: photo; display: block; }
+  .hero :global(.photo img) { width: 88px; height: 88px; border-radius: var(--radius); border: 1px solid var(--line); object-fit: cover; }
+  @media (min-width: 768px) {
+    .hero { grid-template-columns: minmax(0, 1fr) 240px; grid-template-areas: 'id photo' 'text photo'; gap: 0 3rem; margin-top: 3rem; align-items: end; }
+    .text { align-self: start; }
+    .hero :global(.photo img) { width: 240px; height: 240px; }
+  }
+  h1 { font-size: clamp(2rem, 1.4rem + 2.6vw, 3rem); margin-bottom: 0.2rem; }
+  .role { color: var(--muted); font-weight: 600; margin: 0; }
+  .intro { font-size: 1.08rem; max-width: 60ch; margin-top: 1rem; }
+  .more { font-weight: 600; text-decoration: none; display: inline-block; padding: 0.25rem 0; }
+  .more:hover { text-decoration: underline; }
+</style>

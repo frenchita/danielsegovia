@@ -1,15 +1,35 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "danielsegovia",
-  "compatibility_date": "2026-07-10",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
   },
+  // El sitio es HTML estático generado por Astro en ./dist.
+  // El Worker solo se ejecuta para /api/*; todo lo demás lo sirve Static Assets.
   "assets": {
-    "directory": ".",
-    "not_found_handling": "404-page"
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/*"]
   },
-  "compatibility_flags": [
-    "nodejs_compat"
-  ]
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "danielsegovia",
+      // Reemplazar por el ID real al crear la base (wrangler d1 create danielsegovia)
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Cada hora: si alguna nota programada pasó a ser visible, dispara un rebuild.
+  "triggers": {
+    "crons": ["5 * * * *"]
+  }
+  // Secrets (wrangler secret put):
+  //   API_TOKEN        -> token Bearer que usa n8n para escribir
+  //   DEPLOY_HOOK_URL  -> URL del Deploy Hook de Workers Builds (rebuild al publicar)
 }

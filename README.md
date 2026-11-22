@@ -1,1 +1,139 @@
-# danielsegovia
+# danielsegovia.com
+
+Sitio personal y blog de Daniel Segovia. HTML 100 % estático generado con **Astro**, servido por **Cloudflare Workers Static Assets**, con una API mínima en el mismo Worker sobre **Cloudflare D1**.
+
+```
+n8n ──POST /api/posts──► Worker (API) ──► D1
+                              │
+                              └─► Deploy Hook ──► Workers Builds: astro build (lee GET /api/posts) ──► deploy
+Visitante ──► Cloudflare edge ──► HTML estático (sin JS, CSS inline)
+```
+
+- Las páginas se generan en el build; el Worker solo corre para `/api/*`.
+- Al publicar/editar/borrar una nota visible, la API dispara el Deploy Hook y el sitio se regenera (~1 min).
+- Un cron horario regenera el sitio si una nota programada (`published_at` futuro) pasó a ser visible.
+- Si la API no responde durante el build, **el build falla** (nunca se publica un sitio vacío).
+
+## Estructura
+
+| Ruta | Qué es |
+|---|---|
+| `worker/index.ts` | API (router, validación, D1, rebuild) |
+| `worker/sanitize.ts` | Sanitizado de HTML con allowlist (HTMLRewriter) |
+| `migrations/` | Schema de D1 |
+| `src/lib/categories.ts` | Categorías: slugs, nombres y descripciones ES/EN (fuente única) |
+| `src/lib/site.ts` | Config: redes, AdSense, tamaño de página |
+| `src/lib/i18n.ts` | Textos de la interfaz ES/EN |
+| `src/lib/content.ts` | Carga del contenido desde la API en el build |
+| `src/lib/schema.ts` | JSON-LD (Person, WebSite, BlogPosting, BreadcrumbList, CollectionPage, ProfilePage) |
+| `src/views/` | Vistas compartidas ES/EN |
+| `src/pages/` | Rutas (español en la raíz, inglés en `/en/`) |
+
+## Rutas públicas
+
+| Español | Inglés |
+|---|---|
+| `/` | `/en/` |
+| `/sobre-mi/` | `/en/about/` |
+| `/{categoria}/` · `/{categoria}/page/2/` | `/en/{category}/` (solo si hay notas en inglés) |
+| `/{categoria}/{slug}/` | `/en/{category}/{slug}/` |
+| `/buscar/` | `/en/search/` |
+| `/rss.xml` | `/en/rss.xml` |
+
+Además: `/sitemap.xml` (con hreflang), `/robots.txt`, `/ads.txt`, `/og/**.png` (imágenes Open Graph generadas en el build).
+
+Categorías: `tutoriales` (tutorials), `actualidad` (news), `inteligencia-artificial` (artificial-intelligence), `seguridad` (security), `arquitectura` (architecture), `negocios` (business).
+
+## API
+
+Base: `https://danielsegovia.com/api`. Las escrituras requieren `Authorization: Bearer <API_TOKEN>`.
+
+### `POST /api/posts` — crear (o actualizar si ya existe el slug en español)
+
+```json
+{
+  "category": "inteligencia-artificial",
+  "status": "draft",
+  "published_at": "2026-11-22T12:00:00Z",
+  "source_url": "https://fuente.com/nota-original",
+  "translations": {
+    "es": {
+      "title": "Título de la nota",
+      "slug": "titulo-de-la-nota",
+      "excerpt": "Resumen de 20 a 320 caracteres. Se usa como meta description y en las tarjetas.",
+      "content_html": "<p>Contenido con <strong>negrita</strong>, <em>cursiva</em>, <u>subrayado</u>, <a href=\"https://...\">links</a>, listas y tablas.</p>"
+    },
+    "en": { "title": "...", "slug": "...", "excerpt": "...", "content_html": "..." }
+  }
+}
+```
+
+| Campo | Obligatorio | Notas |
+|---|---|---|
+| `category` o `category_id` | sí | key (`seguridad`), slug en inglés (`security`) o id (1–6) |
+| `status` | no | `draft` (default) o `published` |
+| `published_at` | no | ISO 8601. Si se publica sin fecha, se usa la actual. Fecha futura = programada |
+| `source_url` | no | URL http(s) de la fuente |
+| `translations.es` | sí | `en` es opcional |
+| `slug` | sí | `a-z`, `0-9` y guiones, 3–120 caracteres, único por idioma |
+| `title` | sí | 5–200 caracteres |
+| `excerpt` | sí | 20–320 caracteres |
+| `content_html` | sí | Se sanitiza (ver abajo) |
+
+Respuestas: `201` creada · `200` actualizada (mismo slug `es`) · `401` sin token · `409` slug usado por otra nota · `422` validación (el mensaje dice qué campo).
+
+**HTML permitido:** `p br hr strong em u s del mark sub sup small a h2 h3 h4 ul ol li blockquote q cite code pre kbd abbr table caption thead tbody tfoot tr th td figure figcaption dl dt dd`. `b`/`i`/`h1` se convierten en `strong`/`em`/`h2`. Se eliminan scripts, estilos, iframes, imágenes, formularios, comentarios y todos los atributos salvo `href`/`title` (links), `colspan`/`rowspan`/`scope` (tablas), `start` (ol), `id` (headings) y `cite`. Los links externos se abren en una pestaña nueva con `rel="noopener noreferrer"`.
+
+### Otros endpoints de escritura (con token)
+
+- `PATCH /api/posts/:id`: actualización parcial (`status`, `category`, `published_at`, `source_url`, `translations`). `"translations": { "en": null }` borra la traducción en inglés.
+- `DELETE /api/posts/:id`
+- `GET /api/posts/:id`: nota completa, incluidos borradores.
+- `GET /api/admin/posts?status=draft`: listado con borradores.
+- `POST /api/rebuild`: fuerza un rebuild del sitio.
+
+Ejemplo, publicar un borrador:
+
+```bash
+curl -X PATCH https://danielsegovia.com/api/posts/42 \
+  -H "Authorization: Bearer $API_TOKEN" -H "content-type: application/json" \
+  -d '{"status":"published"}'
+```
+
+### Lectura pública (solo notas publicadas y visibles)
+
+- `GET /api/posts?page=1&per_page=50`: todas las notas con contenido (lo usa el build).
+- `GET /api/posts/:slug?locale=es`: nota, relacionadas y categorías.
+- `GET /api/home?locale=es`: las 6 categorías con su último post.
+- `GET /api/categories`
+- `GET /api/categories/:slug?locale=es&page=1`
+- `GET /api/health`
+
+## Desarrollo local
+
+```bash
+npm install
+npm run db:migrate:local
+echo "API_TOKEN=local-dev-token" > .dev.vars
+npm run dev:api                      # Worker + D1 local en http://localhost:8787
+node scripts/seed-dev.mjs            # notas de ejemplo (solo localhost)
+CONTENT_API=http://localhost:8787/api npm run dev     # Astro dev en http://localhost:4321
+CONTENT_API=http://localhost:8787/api npm run build   # build completo (luego se ve en :8787)
+npm run check                        # type-check de Astro y del Worker
+```
+
+## Puesta en producción (una sola vez)
+
+1. Crear la base: `npx wrangler d1 create danielsegovia` y poner el `database_id` en `wrangler.jsonc`.
+2. Aplicar migraciones: `npm run db:migrate:remote`.
+3. Secrets: `npx wrangler secret put API_TOKEN` (token largo y aleatorio para n8n).
+4. En Workers Builds (dashboard → Worker → Settings → Builds):
+   - Build command: `npm run build`.
+   - Deploy command: `npx wrangler deploy` (ya configurado).
+   - Variable de build (solo para el primer deploy): `ALLOW_EMPTY_CONTENT=1`, porque la API todavía no existe. Quitarla después.
+   - Crear un **Deploy Hook** para `main` y guardarlo como secret: `npx wrangler secret put DEPLOY_HOOK_URL`.
+5. Merge a `main` → deploy.
+6. AdSense: el `client` ya está en `src/lib/site.ts`, y con eso se publican el `ads.txt` y la meta `google-adsense-account` (verificación del sitio). Para mostrar anuncios, crear 3 bloques de display en AdSense y poner sus IDs en `ADSENSE.slots`. El script se carga recién con el primer scroll y solo si hay bloques (no se usan Auto ads, para evitar saltos de layout).
+7. Search Console: enviar `https://danielsegovia.com/sitemap.xml`.
+
+Analytics: Cloudflare Web Analytics ya está activo en la zona con instalación automática (no requiere código).

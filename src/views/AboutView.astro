@@ -1,0 +1,96 @@
+---
+import { Picture } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import photo from '../assets/daniel-segovia.jpeg';
+import type { Locale } from '../lib/categories';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { breadcrumbList, graph, profilePage, type Crumb } from '../lib/schema';
+import { AUTHOR, SOCIALS } from '../lib/site';
+import { ogPath } from '../lib/content';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = t(locale);
+const path = STATIC_PATHS.about[locale];
+const crumbs: Crumb[] = [
+  { name: ui.home, path: STATIC_PATHS.home[locale] },
+  { name: ui.about, path },
+];
+const jsonld = graph([...profilePage(locale, path, photo.src), breadcrumbList(crumbs)]);
+
+// Texto de la página. Se puede ampliar libremente (párrafos, logros, charlas, etc.).
+const bio = {
+  es: [
+    'Soy un profesional de tecnología con más de 24 años de trayectoria ininterrumpida en desarrollo de software, arquitectura y liderazgo de productos digitales. A lo largo de mi carrera trabajé en distintas compañías e industrias, participando en múltiples etapas del ciclo de vida de un producto: desde la definición técnica y la construcción de soluciones hasta la evolución de plataformas, equipos y procesos.',
+    'Desde hace más de 8 años lidero equipos de tecnología, alineando estrategia técnica con objetivos de negocio, impulsando buenas prácticas de ingeniería y acompañando el crecimiento profesional de las personas. Actualmente me desempeño como Chief Technology Officer en <a href="https://terrand.app" target="_blank" rel="noopener">Terrand</a>, donde trabajo en la construcción de una visión tecnológica escalable, sostenible y orientada a resultados.',
+    'En mi paso por la educación dicté clases en Image Campus, Acámica y Digital House, y fui director de las carreras Desarrollo Web Full Stack y Desarrollo Web Back End.',
+  ],
+  en: [
+    'I am a technology professional with more than 24 years of uninterrupted experience in software development, architecture, and digital product leadership. Throughout my career, I have worked across companies and industries, contributing to multiple stages of the product lifecycle: from technical definition and solution delivery to the evolution of platforms, teams, and processes.',
+    'For more than 8 years, I have led technology teams, aligning technical strategy with business goals, driving engineering best practices, and supporting people’s professional growth. I currently serve as Chief Technology Officer at <a href="https://terrand.app" target="_blank" rel="noopener">Terrand</a>, where I work on building a scalable, sustainable, results-oriented technology vision.',
+    'During my time in education, I taught at Image Campus, Acámica, and Digital House, and served as director of the Full Stack Web Development and Back End Web Development programs.',
+  ],
+}[locale];
+---
+
+<Base
+  locale={locale}
+  title={ui.aboutTitle}
+  description={ui.aboutDescription}
+  path={path}
+  alternates={STATIC_PATHS.about}
+  ogImage={ogPath(`${locale}/about`)}
+  ogType="profile"
+  jsonld={jsonld}
+>
+  <Breadcrumbs crumbs={crumbs} label={ui.breadcrumb} />
+  <h1 class="page-title">{ui.aboutHeading}</h1>
+
+  <div class="about">
+    <div class="bio">
+      {bio.map((p) => <p set:html={p} />)}
+      <h2>{ui.contact}</h2>
+      <ul class="links">
+        {SOCIALS.map((s) => <li><a href={s.url} rel="me noopener" target="_blank">{s.name}</a></li>)}
+        <li><a href={`mailto:${AUTHOR.email}`}>{ui.email}</a></li>
+      </ul>
+    </div>
+    <Picture
+      src={photo}
+      alt={ui.photoAlt}
+      formats={['avif', 'webp']}
+      widths={[240, 320, 480]}
+      sizes="(min-width: 768px) 280px, 200px"
+      width={280}
+      height={280}
+      loading="eager"
+      pictureAttributes={{ class: 'photo' }}
+    />
+  </div>
+
+  <h2 class="section-title">{ui.careerHeading}</h2>
+  <figure class="career">
+    <img src="/images/daniel_segovia_carrer.svg" alt={ui.careerAlt} width="1427" height="587" loading="lazy" decoding="async" />
+  </figure>
+</Base>
+
+<style>
+  .about { display: grid; gap: 2rem; }
+  @media (min-width: 768px) { .about { grid-template-columns: minmax(0, 1fr) 280px; gap: 3rem; } }
+  .bio { font-size: 1.05rem; max-width: 68ch; }
+  .bio :global(a) { color: var(--accent); }
+  h2 { font-size: 1.15rem; margin-top: 1.5rem; }
+  .links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; }
+  .links a { display: inline-block; padding: 0.3rem 0; font-weight: 600; }
+  .about :global(.photo) { display: block; order: -1; }
+  .about :global(.photo img) { width: 140px; height: 140px; border-radius: var(--radius); border: 1px solid var(--line); object-fit: cover; }
+  @media (min-width: 768px) {
+    .about :global(.photo) { order: 0; }
+    .about :global(.photo img) { width: 280px; height: 280px; }
+  }
+  .career { margin: 0; overflow-x: auto; background: #fff; border-radius: var(--radius); }
+  .career img { min-width: 900px; width: 100%; }
+</style>
