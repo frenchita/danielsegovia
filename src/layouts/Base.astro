@@ -2,7 +2,7 @@
 import type { Locale } from '../lib/categories';
 import { STATIC_PATHS, t } from '../lib/i18n';
 import { abs } from '../lib/schema';
-import { ADSENSE, SITE_NAME } from '../lib/site';
+import { SITE_NAME } from '../lib/site';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 // Comic Neue autoalojada (misma fuente que el sitio anterior), solo subset latin.
@@ -33,8 +33,6 @@ interface Props {
   article?: { publishedAt: string; modifiedAt: string; section: string };
   jsonld?: Record<string, unknown>;
   noindex?: boolean;
-  /** Si la página tiene bloques de AdSense (activa el loader diferido). */
-  ads?: boolean;
   prev?: string;
   next?: string;
   /** Variables CSS de la categoría (colores de acento de la página). */
@@ -43,13 +41,11 @@ interface Props {
   progress?: boolean;
 }
 
-const { locale, title, description, path, alternates = {}, ogImage, ogType = 'website', article, jsonld, noindex = false, ads = false, prev, next, catStyle, progress = false } = Astro.props;
+const { locale, title, description, path, alternates = {}, ogImage, ogType = 'website', article, jsonld, noindex = false, prev, next, catStyle, progress = false } = Astro.props;
 const ui = t(locale);
 const canonical = abs(path);
 const hreflangs = Object.entries(alternates) as [Locale, string][];
 const xDefault = alternates.es ?? alternates.en;
-// El script solo se carga si hay bloques manuales (con espacio reservado); así se evitan los Auto ads y sus saltos de layout.
-const loadAds = ads && !!ADSENSE.client && ADSENSE.slots.some((s) => s.id);
 ---
 
 <!doctype html>
@@ -101,8 +97,6 @@ const loadAds = ads && !!ADSENSE.client && ADSENSE.slots.some((s) => s.id);
     <meta name="twitter:image" content={abs(ogImage)} />
 
     {jsonld && <script type="application/ld+json" set:html={JSON.stringify(jsonld)} />}
-    {ADSENSE.client && <meta name="google-adsense-account" content={ADSENSE.client} />}
-    {loadAds && <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />}
     {
       progress && (
         <style is:inline set:html={progressCss}></style>
@@ -118,29 +112,6 @@ const loadAds = ads && !!ADSENSE.client && ADSENSE.slots.some((s) => s.id);
       <slot />
     </main>
     <Footer locale={locale} alternates={alternates} />
-    {
-      loadAds && (
-        <script is:inline define:vars={{ client: ADSENSE.client }}>
-          // AdSense se carga recién con el primer scroll del usuario (los bots y Lighthouse no scrollean).
-          (function () {
-            var done = false;
-            function load() {
-              if (done) return;
-              done = true;
-              removeEventListener('scroll', load);
-              var s = document.createElement('script');
-              s.async = true;
-              s.crossOrigin = 'anonymous';
-              s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + client;
-              document.head.appendChild(s);
-              var slots = document.querySelectorAll('ins.adsbygoogle');
-              for (var i = 0; i < slots.length; i++) (window.adsbygoogle = window.adsbygoogle || []).push({});
-            }
-            addEventListener('scroll', load, { passive: true });
-          })();
-        </script>
-      )
-    }
   </body>
 </html>
 
@@ -202,12 +173,5 @@ const loadAds = ads && !!ADSENSE.client && ADSENSE.slots.some((s) => s.id);
   .rainbow {
     border-bottom: 4px solid transparent;
     border-image: linear-gradient(90deg, #1756e1, #e5484d, #7c3aed, #0f9d58, #f08c00, #d6249f) 1;
-  }
-
-
-  /* Layout contenido + columna de anuncios */
-  .with-aside { display: grid; gap: 2rem; }
-  @media (min-width: 960px) {
-    .with-aside { grid-template-columns: minmax(0, 1fr) 300px; gap: 3rem; }
   }
 </style>

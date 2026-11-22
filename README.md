@@ -22,7 +22,7 @@ Visitante ──► Cloudflare edge ──► HTML estático (sin JS, CSS inline
 | `worker/sanitize.ts` | Sanitizado de HTML con allowlist (HTMLRewriter) |
 | `migrations/` | Schema de D1 |
 | `src/lib/categories.ts` | Categorías: slugs, nombres y descripciones ES/EN (fuente única) |
-| `src/lib/site.ts` | Config: redes, AdSense, tamaño de página |
+| `src/lib/site.ts` | Config: redes, tamaño de página |
 | `src/lib/i18n.ts` | Textos de la interfaz ES/EN |
 | `src/lib/content.ts` | Carga del contenido desde la API en el build |
 | `src/lib/schema.ts` | JSON-LD (Person, WebSite, BlogPosting, BreadcrumbList, CollectionPage, ProfilePage) |
@@ -40,7 +40,7 @@ Visitante ──► Cloudflare edge ──► HTML estático (sin JS, CSS inline
 | `/buscar/` | `/en/search/` |
 | `/rss.xml` | `/en/rss.xml` |
 
-Además: `/sitemap.xml` (con hreflang), `/robots.txt`, `/ads.txt`, `/og/**.png` (imágenes Open Graph generadas en el build).
+Además: `/sitemap.xml` (con hreflang), `/robots.txt`, `/og/**.png` (imágenes Open Graph generadas en el build).
 
 Páginas de confianza: `/contacto/` y `/privacidad/` (y `/en/contact/`, `/en/privacy/`). `/about`, `/contact` y `/privacy` redirigen con 301 (`public/_redirects`).
 
@@ -144,7 +144,6 @@ npm run check                        # type-check de Astro y del Worker
    - Variable de build (solo para el primer deploy): `ALLOW_EMPTY_CONTENT=1`, porque la API todavía no existe. Quitarla después.
    - Crear un **Deploy Hook** para `main` y guardarlo como secret: `npx wrangler secret put DEPLOY_HOOK_URL`.
 5. Merge a `main` → deploy.
-6. AdSense: el `client` ya está en `src/lib/site.ts`, y con eso se publican el `ads.txt` y la meta `google-adsense-account` (verificación del sitio). Para mostrar anuncios, crear 3 bloques de display en AdSense y poner sus IDs en `ADSENSE.slots`. El script se carga recién con el primer scroll y solo si hay bloques (no se usan Auto ads, para evitar saltos de layout).
-7. Search Console: enviar `https://danielsegovia.com/sitemap.xml`.
+6. Search Console: enviar `https://danielsegovia.com/sitemap.xml`.
 
 Analytics: Cloudflare Web Analytics ya está activo en la zona con instalación automática (no requiere código).

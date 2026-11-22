@@ -29,28 +29,5 @@ export const SOCIALS = [
   { name: 'GitHub', url: 'https://github.com/frenchita' },
 ] as const;
 
-export interface AdSlot {
-  /** data-ad-slot del bloque en AdSense. */
-  id: string;
-  width: number;
-  height: number;
-  /** En desktop queda fijo en la columna lateral mientras se scrollea. */
-  sticky?: boolean;
-  /** Nombre del bloque en AdSense (referencia). */
-  name: string;
-}
-
-/**
- * AdSense. Mientras `client` esté vacío no se renderiza ningún anuncio ni el ads.txt.
- * Bloques fijos (no responsive): el espacio queda reservado con su medida exacta (CLS = 0).
- */
-export const ADSENSE: { client: string; slots: AdSlot[] } = {
-  client: 'ca-pub-3288067525064259',
-  slots: [
-    { id: '1092052285', width: 300, height: 600, sticky: true, name: 'Pagina Articulo Lateral Grande' },
-    { id: '3932791867', width: 300, height: 250, name: 'Pagina Articulo Lateral Chico' },
-  ],
-};
-
 /** Notas por página en el listado de categorías. */
 export const PAGE_SIZE = 10;
