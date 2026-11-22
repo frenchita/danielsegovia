@@ -1,0 +1,48 @@
+---
+// Columna de anuncios. El espacio queda reservado con la medida exacta de cada bloque
+// para no mover el layout (CLS = 0). El script de AdSense se carga en Base.astro con el primer scroll.
+// En desktop, el bloque `sticky` (300x600) queda fijo mientras se lee y se detiene antes del siguiente.
+import type { Locale } from '../lib/categories';
+import { t } from '../lib/i18n';
+import { ADSENSE } from '../lib/site';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const slots = ADSENSE.client ? ADSENSE.slots.filter((s) => s.id) : [];
+const label = t(locale).ad;
+---
+
+{
+  slots.length > 0 && (
+    <aside class="ads" aria-label={label}>
+      {slots.map((s) => (
+        <div class:list={['track', { grow: s.sticky }]}>
+          <div class:list={['slot', { sticky: s.sticky }]} style={`width:${s.width}px`}>
+            <span class="label">{label}</span>
+            <ins
+              class="adsbygoogle"
+              style={`display:block;width:${s.width}px;height:${s.height}px`}
+              data-ad-client={ADSENSE.client}
+              data-ad-slot={s.id}
+            />
+          </div>
+        </div>
+      ))}
+    </aside>
+  )
+}
+
+<style>
+  .ads { display: flex; flex-direction: column; align-items: center; gap: 2rem; }
+  .track { display: flex; justify-content: center; }
+  .label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.25rem; }
+  .slot :global(ins) { background: var(--code-bg); border-radius: 4px; }
+  @media (min-width: 960px) {
+    .ads { align-self: stretch; gap: 3rem; }
+    /* El contenedor del bloque sticky ocupa el alto disponible, así el anuncio acompaña la lectura. */
+    .track.grow { flex: 1 1 auto; align-items: flex-start; }
+    .slot.sticky { position: sticky; top: 1.25rem; }
+  }
+</style>
