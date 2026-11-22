@@ -11,7 +11,7 @@ Visitante ──► Cloudflare edge ──► HTML estático (sin JS, CSS inline
 
 - Las páginas se generan en el build; el Worker solo corre para `/api/*`.
 - Al publicar/editar/borrar una nota visible, la API dispara el Deploy Hook y el sitio se regenera (~1 min).
-- Un cron horario regenera el sitio si una nota programada (`published_at` futuro) pasó a ser visible.
+- Un cron cada 15 minutos regenera el sitio si alguna nota programada (`publish_at` futuro) pasó su hora. La marca de la última revisión se guarda en D1, así que ninguna nota se pierde aunque falle una ejecución.
 - Si la API no responde durante el build, **el build falla** (nunca se publica un sitio vacío).
 
 ## Estructura
@@ -53,8 +53,8 @@ Base: `https://danielsegovia.com/api`. Las escrituras requieren `Authorization: 
 ```json
 {
   "category": "inteligencia-artificial",
-  "status": "draft",
-  "published_at": "2026-11-22T12:00:00Z",
+  "status": "published",
+  "publish_at": "2026-11-23T09:42:00-03:00",
   "source_url": "https://fuente.com/nota-original",
   "translations": {
     "es": {
@@ -72,7 +72,7 @@ Base: `https://danielsegovia.com/api`. Las escrituras requieren `Authorization: 
 |---|---|---|
 | `category` o `category_id` | sí | key (`seguridad`), slug en inglés (`security`) o id (1–6) |
 | `status` | no | `draft` (default) o `published` |
-| `published_at` | no | ISO 8601. Si se publica sin fecha, se usa la actual. Fecha futura = programada |
+| `publish_at` | no | Fecha ISO 8601 **con zona horaria** (`-03:00` o `Z`); sin zona horaria se rechaza. Fecha futura = programada: la nota se ve después de esa hora (como mucho ~15 min de demora más el rebuild), pero en el sitio, el JSON-LD y el RSS figura la hora exacta de `publish_at`. Si se envía sin `status`, se asume `published`. Si se publica sin fecha, se usa la actual. `published_at` funciona como alias |
 | `source_url` | no | URL http(s) de la fuente |
 | `translations.es` | sí | `en` es opcional |
 | `slug` | sí | `a-z`, `0-9` y guiones, 3–120 caracteres, único por idioma |
@@ -86,7 +86,7 @@ Respuestas: `201` creada · `200` actualizada (mismo slug `es`) · `401` sin tok
 
 ### Otros endpoints de escritura (con token)
 
-- `PATCH /api/posts/:id`: actualización parcial (`status`, `category`, `published_at`, `source_url`, `translations`). `"translations": { "en": null }` borra la traducción en inglés.
+- `PATCH /api/posts/:id`: actualización parcial (`status`, `category`, `publish_at`, `source_url`, `translations`). `"translations": { "en": null }` borra la traducción en inglés.
 - `DELETE /api/posts/:id`
 - `GET /api/posts/:id`: nota completa, incluidos borradores.
 - `GET /api/admin/posts?status=draft`: listado con borradores.

@@ -231,13 +231,22 @@ async function parsePostInput(body: Record<string, unknown>, partial: boolean): 
     }
   }
 
-  if (body.published_at !== undefined) {
-    if (body.published_at === null) out.published_at = null;
+  // `publish_at` es un alias de `published_at` (fecha en la que la nota se hace visible).
+  const rawDate = body.publish_at !== undefined ? body.publish_at : body.published_at;
+  if (rawDate !== undefined) {
+    if (rawDate === null) out.published_at = null;
     else {
-      const d = new Date(String(body.published_at));
-      if (Number.isNaN(d.getTime())) throw new HttpError(422, 'published_at debe ser una fecha ISO 8601');
+      const raw = String(rawDate);
+      // Exigir zona horaria evita ambigüedades (n8n corre en otra TZ que el lector).
+      if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(raw.trim())) {
+        throw new HttpError(422, 'publish_at debe incluir zona horaria, p. ej. "2026-11-23T09:00:00-03:00" o "2026-11-23T12:00:00Z"');
+      }
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) throw new HttpError(422, 'publish_at debe ser una fecha ISO 8601');
       out.published_at = d.toISOString();
     }
+    // Enviar una fecha sin status implica programar la publicación.
+    if (out.status === undefined && out.published_at) out.status = 'published';
   }
 
   if (body.translations !== undefined) {
@@ -579,12 +588,28 @@ export default {
   },
 
   // Cron horario: si una nota programada pasó a ser visible en la última hora, rebuild.
-  async scheduled(_event, env, ctx) {
-    const to = nowIso();
-    const from = new Date(Date.now() - 65 * 60 * 1000).toISOString();
-    const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM posts WHERE status = 'published' AND published_at > ? AND published_at <= ? AND published_at > updated_at`)
-      .bind(from, to)
+  // Cron (cada 15 min): si alguna nota programada pasó su publish_at desde la última revisión, rebuild.
+  // La marca `last_schedule_check` solo avanza si el rebuild se disparó bien, así ninguna nota se pierde
+  // aunque una ejecución falle.
+  async scheduled(_event, env) {
+    const now = nowIso();
+    const last =
+      (await env.DB.prepare(`SELECT value FROM site_state WHERE key = 'last_schedule_check'`).first<{ value: string }>())?.value ??
+      new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // published_at > updated_at: la nota se guardó antes de su fecha (programada). Las publicadas
+    // "ya" disparan su rebuild al crearse, así que no se cuentan dos veces.
+    const row = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM posts WHERE status = 'published' AND published_at > ? AND published_at <= ? AND published_at > updated_at`,
+    )
+      .bind(last, now)
       .first<{ n: number }>();
-    if (row && row.n > 0) ctx.waitUntil(triggerRebuild(env, `${row.n} nota(s) programada(s) visibles`));
+    const due = row?.n ?? 0;
+    let advance = true;
+    if (due > 0) advance = (await triggerRebuild(env, `${due} nota(s) programada(s) pasaron su publish_at`)) || !env.DEPLOY_HOOK_URL;
+    if (advance) {
+      await env.DB.prepare(`INSERT INTO site_state (key, value) VALUES ('last_schedule_check', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`)
+        .bind(now)
+        .run();
+    }
   },
 } satisfies ExportedHandler<Env>;

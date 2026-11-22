@@ -24,9 +24,9 @@
       "migrations_dir": "migrations"
     }
   ],
-  // Cada hora: si alguna nota programada pasó a ser visible, dispara un rebuild.
+  // Cada 15 min: si alguna nota programada pasó su publish_at, dispara un rebuild.
   "triggers": {
-    "crons": ["5 * * * *"]
+    "crons": ["*/15 * * * *"]
   }
   // Secrets (wrangler secret put):
   //   API_TOKEN        -> token Bearer que usa n8n para escribir
