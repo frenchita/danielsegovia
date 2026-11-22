@@ -20,8 +20,7 @@
     {
       "binding": "DB",
       "database_name": "danielsegovia",
-      // Reemplazar por el ID real al crear la base (wrangler d1 create danielsegovia)
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "f33bc2e3-cd84-41c9-948c-e3a8ec37a0ac",
       "migrations_dir": "migrations"
     }
   ],

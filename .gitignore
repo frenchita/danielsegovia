@@ -112,3 +112,6 @@ dist
 # astro
 .astro/
 .dev.vars
+
+# secretos locales (token de la API, etc.)
+.secrets/
