@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "dev:api": "wrangler dev --port 8787",
-    "build": "astro build && pagefind --site dist",
+    "build": "astro build && pagefind --site dist && node scripts/build-markdown.mjs dist",
     "preview": "wrangler dev --port 8787",
     "db:migrate:local": "wrangler d1 migrations apply danielsegovia --local",
     "db:migrate:remote": "wrangler d1 migrations apply danielsegovia --remote",
@@ -22,6 +22,8 @@
     "@resvg/resvg-js": "^2.6.2",
     "pagefind": "^1.6.0",
     "satori": "^0.63.2",
+    "turndown": "^7.2.5",
+    "turndown-plugin-gfm": "^1.0.2",
     "typescript": "^6.0.3",
     "wrangler": "^4.166.0"
   },

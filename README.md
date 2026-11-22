@@ -42,6 +42,17 @@ Visitante ──► Cloudflare edge ──► HTML estático (sin JS, CSS inline
 
 Además: `/sitemap.xml` (con hreflang), `/robots.txt`, `/ads.txt`, `/og/**.png` (imágenes Open Graph generadas en el build).
 
+Páginas de confianza: `/contacto/` y `/privacidad/` (y `/en/contact/`, `/en/privacy/`). `/about`, `/contact` y `/privacy` redirigen con 301 (`public/_redirects`).
+
+### Para agentes de IA
+
+- `/llms.txt`: qué es el sitio, **cuándo usarlo**, cómo consultarlo, categorías y notas recientes. También en `/?mode=agent`.
+- **Markdown por negociación**: cualquier página responde Markdown con `Accept: text/markdown`, y está disponible en `<url>index.md`. Lo genera `scripts/build-markdown.mjs` después del build. Cada página HTML enlaza su versión Markdown con `<link rel="alternate" type="text/markdown">`, y `public/_headers` agrega `Vary: Accept`.
+- Las rutas inexistentes devuelven un **404 real** con links al sitemap, `llms.txt` y RSS.
+- **Sin Worker por visita**: la negociación la hacen dos URL Rewrite Rules de la zona (Cloudflare → Rules → Transform Rules), así que el Worker sigue corriendo solo para `/api/*`:
+  1. *Markdown para agentes*: si `Accept` contiene `text/markdown` y la ruta termina en `/` (y no es `/api/`), la ruta se reescribe a `concat(ruta, "index.md")`.
+  2. *Vista para agentes*: `/` con `mode=agent` en la query se reescribe a `/llms.txt`.
+
 Categorías: `tutoriales` (tutorials), `actualidad` (news), `inteligencia-artificial` (artificial-intelligence), `seguridad` (security), `arquitectura` (architecture), `negocios` (business).
 
 ## API

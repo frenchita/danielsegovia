@@ -26,6 +26,7 @@ export const SOCIALS = [
   { name: 'Instagram', url: 'https://www.instagram.com/danielsegovia_cto/' },
   { name: 'TikTok', url: 'https://www.tiktok.com/@danisegovia_cto' },
   { name: 'YouTube', url: 'https://www.youtube.com/@daniel_segovia/' },
+  { name: 'GitHub', url: 'https://github.com/frenchita' },
 ] as const;
 
 export interface AdSlot {

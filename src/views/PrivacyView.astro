@@ -1,0 +1,63 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import type { Locale } from '../lib/categories';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { abs, breadcrumbList, graph, WEBSITE_ID, type Crumb } from '../lib/schema';
+import { AUTHOR } from '../lib/site';
+import { ogPath } from '../lib/content';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = t(locale);
+const path = STATIC_PATHS.privacy[locale];
+const crumbs: Crumb[] = [
+  { name: ui.home, path: STATIC_PATHS.home[locale] },
+  { name: ui.privacy, path },
+];
+const UPDATED = '2026-11-22';
+const jsonld = graph([
+  { '@type': 'WebPage', '@id': `${abs(path)}#webpage`, url: abs(path), name: ui.privacyTitle, inLanguage: locale, isPartOf: { '@id': WEBSITE_ID }, dateModified: UPDATED },
+  breadcrumbList(crumbs),
+]);
+const mail = `<a href="mailto:${AUTHOR.email}">${AUTHOR.email}</a>`;
+
+// Texto informativo. No constituye asesoramiento legal.
+const sections = {
+  es: [
+    ['Responsable', `Este sitio, danielsegovia.com, es un blog personal de Daniel Segovia. Para cualquier consulta sobre privacidad podés escribir a ${mail}.`],
+    ['Qué datos se recopilan', 'El sitio no tiene registro de usuarios, formularios ni comentarios, por lo que no te pide datos personales. Si me escribís por email, uso tu dirección y tu mensaje solo para responderte, y no los comparto con terceros.'],
+    ['Analítica', 'Para medir visitas de forma agregada uso Cloudflare Web Analytics, que no usa cookies, no rastrea a las personas entre sitios y no recopila datos personales identificables. Cloudflare, como proveedor de infraestructura, procesa datos técnicos como la dirección IP para entregar el sitio y protegerlo de ataques.'],
+    ['Publicidad y cookies de Google AdSense', 'El sitio muestra anuncios de Google AdSense. Google y sus socios publicitarios usan cookies y tecnologías similares para mostrar anuncios basados en tus visitas anteriores a este y otros sitios, medir su rendimiento y prevenir fraudes. La cookie de publicidad de Google permite que Google y sus socios muestren anuncios en función de tu navegación. Podés desactivar la publicidad personalizada en <a href="https://adssettings.google.com" target="_blank" rel="noopener">la configuración de anuncios de Google</a>, y conocer más en <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">cómo usa Google las cookies en publicidad</a>. También podés gestionar cookies de terceros desde <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a>.'],
+    ['Enlaces a otros sitios', 'Las notas enlazan a fuentes y sitios externos. Este sitio no controla sus prácticas de privacidad, así que te recomiendo revisar las políticas de cada uno.'],
+    ['Tus derechos', `Podés pedir acceso, rectificación o eliminación de cualquier dato que me hayas enviado por email escribiendo a ${mail}. También podés bloquear o borrar las cookies desde la configuración de tu navegador.`],
+    ['Cambios', 'Esta política puede actualizarse si cambian los servicios que usa el sitio. La fecha de la última actualización figura al final de la página.'],
+  ],
+  en: [
+    ['Who is responsible', `This site, danielsegovia.com, is the personal blog of Daniel Segovia. For any privacy question you can write to ${mail}.`],
+    ['What data is collected', 'The site has no user accounts, forms or comments, so it does not ask you for personal data. If you email me, I use your address and message only to reply, and I do not share them with third parties.'],
+    ['Analytics', 'To measure aggregated traffic I use Cloudflare Web Analytics, which does not use cookies, does not track people across sites and does not collect personally identifiable data. Cloudflare, as the infrastructure provider, processes technical data such as IP addresses to deliver the site and protect it from attacks.'],
+    ['Advertising and Google AdSense cookies', 'The site shows Google AdSense ads. Google and its advertising partners use cookies and similar technologies to show ads based on your previous visits to this and other sites, measure their performance and prevent fraud. Google’s advertising cookie enables Google and its partners to serve ads based on your browsing. You can opt out of personalized advertising in <a href="https://adssettings.google.com" target="_blank" rel="noopener">Google Ads Settings</a>, and learn more about <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">how Google uses cookies in advertising</a>. You can also manage third-party cookies at <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a>.'],
+    ['Links to other sites', 'Posts link to external sources and websites. This site does not control their privacy practices, so I recommend reviewing each site’s policy.'],
+    ['Your rights', `You can request access to, correction or deletion of any data you sent me by email by writing to ${mail}. You can also block or delete cookies in your browser settings.`],
+    ['Changes', 'This policy may be updated if the services used by the site change. The date of the last update is shown at the bottom of the page.'],
+  ],
+}[locale];
+---
+
+<Base locale={locale} title={ui.privacyTitle} description={ui.privacyDescription} path={path} alternates={STATIC_PATHS.privacy} ogImage={ogPath(`${locale}/home`)} jsonld={jsonld}>
+  <Breadcrumbs crumbs={crumbs} label={ui.breadcrumb} />
+  <h1 class="page-title">{ui.privacyTitle.split(' | ')[0]}</h1>
+  <div class="text">
+    {sections.map(([h, p]) => (<><h2>{h}</h2><p set:html={p} /></>))}
+    <p class="muted">{locale === 'es' ? 'Última actualización' : 'Last updated'}: <time datetime={UPDATED}>{UPDATED}</time></p>
+  </div>
+</Base>
+
+<style>
+  .text { font-size: 1.05rem; max-width: 68ch; }
+  .text h2 { font-size: 1.2rem; margin-top: 1.75rem; }
+  .text :global(a) { color: var(--accent); }
+</style>

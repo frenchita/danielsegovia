@@ -10,6 +10,13 @@ const ui = t('es');
 <Base locale="es" title={`${ui.notFoundTitle} | Daniel Segovia`} description={ui.notFoundText} path="/404/" ogImage={ogPath('es/home')} noindex>
   <h1 class="page-title">{ui.notFoundTitle}</h1>
   <p>{ui.notFoundText} <a href="/">{ui.backHome}</a> · <a href="/en/" lang="en" hreflang="en">Page not found — back to home</a></p>
+  <p>{ui.notFoundAgents}</p>
+  <ul>
+    <li><a href="/sitemap.xml">Sitemap</a></li>
+    <li><a href="/llms.txt">llms.txt</a></li>
+    <li><a href="/rss.xml">RSS</a></li>
+    <li><a href="/buscar/">{ui.search}</a></li>
+  </ul>
   <h2 class="section-title rainbow">{ui.moreCategories}</h2>
   <CategoryGrid locale="es" />
 </Base>

@@ -1,0 +1,84 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import type { Locale } from '../lib/categories';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { abs, breadcrumbList, graph, PERSON_ID, WEBSITE_ID, type Crumb } from '../lib/schema';
+import { AUTHOR, SOCIALS } from '../lib/site';
+import { ogPath } from '../lib/content';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = t(locale);
+const path = STATIC_PATHS.contact[locale];
+const crumbs: Crumb[] = [
+  { name: ui.home, path: STATIC_PATHS.home[locale] },
+  { name: ui.contact, path },
+];
+const jsonld = graph([
+  {
+    '@type': 'ContactPage',
+    '@id': `${abs(path)}#webpage`,
+    url: abs(path),
+    name: ui.contactTitle,
+    inLanguage: locale,
+    isPartOf: { '@id': WEBSITE_ID },
+    about: { '@id': PERSON_ID },
+  },
+  breadcrumbList(crumbs),
+]);
+
+const copy = {
+  es: {
+    heading: 'Contacto',
+    intro: [
+      'Si querés hacerme una consulta profesional, invitarme a dar una charla, proponer una colaboración o comentar alguna de las notas del sitio, escribime. Leo todos los mensajes y respondo en cuanto puedo, normalmente dentro de algunos días hábiles.',
+      'Para consultas sobre liderazgo de equipos de tecnología, arquitectura de software, adopción de inteligencia artificial en productos o seguridad, contame brevemente el contexto: el tipo de empresa, el tamaño del equipo y qué problema querés resolver. Así puedo darte una respuesta más útil.',
+    ],
+    emailTitle: 'Email',
+    emailText: 'Es la mejor vía para consultas profesionales:',
+    socialTitle: 'Redes',
+    socialText: 'También publico contenido y respondo mensajes en:',
+    notTitle: 'Antes de escribir',
+    not: 'No ofrezco soporte técnico de productos de terceros. Si encontrás un error en una nota, avisame con el link y la corrección: lo reviso y actualizo la publicación.',
+  },
+  en: {
+    heading: 'Contact',
+    intro: [
+      'If you want to reach out with a professional inquiry, invite me to give a talk, propose a collaboration or comment on any of the posts on this site, send me a message. I read every message and reply as soon as I can, usually within a few business days.',
+      'For questions about leading technology teams, software architecture, adopting artificial intelligence in products or security, briefly share the context: the kind of company, the size of the team and the problem you want to solve. That way I can give you a more useful answer.',
+    ],
+    emailTitle: 'Email',
+    emailText: 'The best channel for professional inquiries:',
+    socialTitle: 'Social',
+    socialText: 'I also publish content and answer messages on:',
+    notTitle: 'Before you write',
+    not: 'I do not provide technical support for third-party products. If you find a mistake in a post, send me the link and the correction: I will review it and update the post.',
+  },
+}[locale];
+---
+
+<Base locale={locale} title={ui.contactTitle} description={ui.contactDescription} path={path} alternates={STATIC_PATHS.contact} ogImage={ogPath(`${locale}/about`)} jsonld={jsonld}>
+  <Breadcrumbs crumbs={crumbs} label={ui.breadcrumb} />
+  <h1 class="page-title">{copy.heading}</h1>
+  <div class="text">
+    {copy.intro.map((p) => <p>{p}</p>)}
+    <h2>{copy.emailTitle}</h2>
+    <p>{copy.emailText} <a href={`mailto:${AUTHOR.email}`}>{AUTHOR.email}</a></p>
+    <h2>{copy.socialTitle}</h2>
+    <p>{copy.socialText}</p>
+    <ul>{SOCIALS.map((s) => <li><a href={s.url} rel="me noopener" target="_blank">{s.name}</a></li>)}</ul>
+    <h2>{copy.notTitle}</h2>
+    <p>{copy.not}</p>
+    <p><a href={STATIC_PATHS.about[locale]}>{ui.about} →</a></p>
+  </div>
+</Base>
+
+<style>
+  .text { font-size: 1.05rem; max-width: 68ch; }
+  .text h2 { font-size: 1.2rem; margin-top: 1.75rem; }
+  .text a { color: var(--accent); }
+  .text li { margin: 0.3rem 0; }
+</style>

@@ -65,6 +65,7 @@ const loadAds = ads && !!ADSENSE.client && ADSENSE.slots.some((s) => s.id);
     {hreflangs.length > 1 && xDefault && <link rel="alternate" hreflang="x-default" href={abs(xDefault)} />}
     {prev && <link rel="prev" href={abs(prev)} />}
     {next && <link rel="next" href={abs(next)} />}
+    {!noindex && <link rel="alternate" type="text/markdown" href={`${path}index.md`} title="Markdown" />}
     <link rel="alternate" type="application/rss+xml" title={`${SITE_NAME} (${locale.toUpperCase()})`} href={abs(STATIC_PATHS.rss[locale])} />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <meta name="author" content="Daniel Segovia" />

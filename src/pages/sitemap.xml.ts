@@ -18,6 +18,8 @@ export async function GET() {
   for (const l of LOCALES) {
     urls.push({ loc: STATIC_PATHS.home[l], lastmod: newest(entriesByLocale[l]), alternates: STATIC_PATHS.home });
     urls.push({ loc: STATIC_PATHS.about[l], alternates: STATIC_PATHS.about });
+    urls.push({ loc: STATIC_PATHS.contact[l], alternates: STATIC_PATHS.contact });
+    urls.push({ loc: STATIC_PATHS.privacy[l], alternates: STATIC_PATHS.privacy });
   }
 
   for (const l of LOCALES) {

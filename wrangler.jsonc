@@ -9,6 +9,8 @@
   },
   // El sitio es HTML estático generado por Astro en ./dist.
   // El Worker solo se ejecuta para /api/*; todo lo demás lo sirve Static Assets.
+  // La versión Markdown para agentes (Accept: text/markdown, ?mode=agent) se resuelve con
+  // Transform Rules de la zona (reescritura a index.md / llms.txt), sin invocar el Worker.
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
