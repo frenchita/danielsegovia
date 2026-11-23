@@ -2,15 +2,25 @@
 // Se ejecuta una sola vez por build (memoizado) y todo lo demás se calcula en memoria.
 
 import { CATEGORIES, LOCALES, categoryByKey, type Category, type Locale } from './categories';
-import { prefix } from './i18n';
+import { STATIC_PATHS, prefix } from './i18n';
 import { PAGE_SIZE } from './site';
+
+export interface ApiTag {
+  slug: string;
+  name: string;
+}
 
 export interface Translation {
   slug: string;
   title: string;
   excerpt: string;
   content_html: string;
+  tags?: ApiTag[];
   updated_at: string;
+}
+
+export interface TagLink extends ApiTag {
+  url: string;
 }
 
 export interface ApiPost {
@@ -44,6 +54,7 @@ export interface Entry {
   isNew: boolean;
   /** Índice: h2 de la nota con su ancla. */
   toc: { id: string; text: string }[];
+  tags: TagLink[];
 }
 
 const NEW_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -91,6 +102,8 @@ export const categoryUrl = (locale: Locale, cat: Category, page = 1) =>
   `${prefix(locale)}/${cat[locale].slug}/${page > 1 ? `page/${page}/` : ''}`;
 
 export const postUrl = (locale: Locale, cat: Category, slug: string) => `${prefix(locale)}/${cat[locale].slug}/${slug}/`;
+
+export const tagUrl = (locale: Locale, slug: string, page = 1) => `${STATIC_PATHS.tags[locale]}${slug}/${page > 1 ? `page/${page}/` : ''}`;
 
 export const ogPath = (key: string) => `/og/${key}.png`;
 
@@ -157,6 +170,7 @@ function toEntry(p: ApiPost, locale: Locale): Entry | null {
     url: postUrl(locale, category, tr.slug),
     ogImage: ogPath(`${locale}/${category.key}/${tr.slug}`),
     alternates,
+    tags: (tr.tags ?? []).map((t) => ({ ...t, url: tagUrl(locale, t.slug) })),
   };
 }
 
@@ -219,6 +233,50 @@ export async function categoryHasPage(locale: Locale, cat: Category) {
   return locale === 'es' || (await getEntriesByCategory(locale, cat)).length > 0;
 }
 
+/** Las páginas de tag con menos notas que esto llevan noindex y no van al sitemap (contenido escaso). */
+export const MIN_TAG_POSTS_TO_INDEX = 2;
+
+export interface TagGroup extends TagLink {
+  /** Notas del tag, de la más nueva a la más vieja. */
+  entries: Entry[];
+  indexable: boolean;
+}
+
+/** Tags de un idioma con sus notas, de más a menos usados. El nombre visible sale de la nota más reciente. */
+export async function getTags(locale: Locale): Promise<TagGroup[]> {
+  const map = new Map<string, TagGroup>();
+  for (const e of await getEntries(locale)) {
+    for (const t of e.tags) {
+      let g = map.get(t.slug);
+      if (!g) map.set(t.slug, (g = { ...t, entries: [], indexable: false }));
+      g.entries.push(e);
+    }
+  }
+  const groups = [...map.values()];
+  for (const g of groups) g.indexable = g.entries.length >= MIN_TAG_POSTS_TO_INDEX;
+  return groups.sort((a, b) => b.entries.length - a.entries.length || a.name.localeCompare(b.name, locale));
+}
+
+/** Rutas de tag (con paginado) para getStaticPaths. */
+export async function tagPages(locale: Locale) {
+  const pages: { tag: TagGroup; page: number; totalPages: number; entries: Entry[] }[] = [];
+  for (const tag of await getTags(locale)) {
+    const totalPages = Math.max(1, Math.ceil(tag.entries.length / PAGE_SIZE));
+    for (let page = 1; page <= totalPages; page++) {
+      pages.push({ tag, page, totalPages, entries: tag.entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE) });
+    }
+  }
+  return pages;
+}
+
+/** Relacionadas: primero las que comparten más tags (de cualquier categoría), después las de la misma categoría. */
 export async function relatedEntries(entry: Entry, limit = 3) {
-  return (await getEntriesByCategory(entry.locale, entry.category)).filter((e) => e.id !== entry.id).slice(0, limit);
+  const own = new Set(entry.tags.map((t) => t.slug));
+  return (await getEntries(entry.locale))
+    .filter((e) => e.id !== entry.id)
+    .map((e) => ({ e, shared: e.tags.filter((t) => own.has(t.slug)).length, sameCat: e.category.id === entry.category.id }))
+    .filter((x) => x.shared > 0 || x.sameCat)
+    .sort((a, b) => b.shared - a.shared || Number(b.sameCat) - Number(a.sameCat))
+    .slice(0, limit)
+    .map((x) => x.e);
 }

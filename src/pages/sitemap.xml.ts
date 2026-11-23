@@ -1,6 +1,6 @@
 // Sitemap con alternates hreflang (xhtml:link) por cada URL.
 import { LOCALES, type Locale } from '../lib/categories';
-import { categoryPages, categoryUrl, getEntries } from '../lib/content';
+import { categoryPages, categoryUrl, getEntries, tagPages, tagUrl } from '../lib/content';
 import { STATIC_PATHS } from '../lib/i18n';
 import { abs } from '../lib/schema';
 
@@ -34,6 +34,10 @@ export async function GET() {
       urls.push({ loc: categoryUrl(l, p.category, p.page), lastmod: newest(p.entries), alternates });
     }
     for (const e of entriesByLocale[l]) urls.push({ loc: e.url, lastmod: e.updatedAt, alternates: e.alternates });
+    // Solo los tags con suficientes notas (los demás llevan noindex).
+    const tags = (await tagPages(l)).filter((p) => p.tag.indexable);
+    if (tags.length) urls.push({ loc: STATIC_PATHS.tags[l], lastmod: newest(entriesByLocale[l]) });
+    for (const p of tags) urls.push({ loc: tagUrl(l, p.tag.slug, p.page), lastmod: newest(p.entries) });
   }
 
   const body = urls

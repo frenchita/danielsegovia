@@ -1,0 +1,36 @@
+---
+// Lista de tags como "pills" enlazadas. Se usa en la barra lateral de la nota y en el índice de tags.
+import type { TagLink } from '../lib/content';
+
+interface Props {
+  tags: (TagLink & { count?: number })[];
+  /** Agrega rel="tag" (en una nota, los tags describen esa nota). */
+  relTag?: boolean;
+}
+const { tags, relTag = false } = Astro.props;
+---
+
+<ul class="tags">
+  {
+    tags.map((tag) => (
+      <li>
+        <a href={tag.url} rel={relTag ? 'tag' : undefined}>
+          <span aria-hidden="true">#</span>{tag.name}
+          {tag.count !== undefined && <span class="count">{tag.count}</span>}
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .tags { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  a {
+    display: inline-flex; align-items: center; gap: 0.15rem; min-height: 2.25rem; padding: 0.3rem 0.8rem;
+    border: 1px solid var(--soft); border-radius: 999px; font-size: 0.9rem; font-weight: 700; text-decoration: none;
+    color: var(--cat-ink, var(--fg)); background: var(--card); transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  a span[aria-hidden] { color: var(--muted); font-weight: 300; }
+  a:hover { background: var(--cat-tint, var(--code-bg)); border-color: var(--cat, var(--line)); color: var(--cat-ink, var(--fg)); }
+  .count { margin-left: 0.4rem; font-size: 0.75rem; font-weight: 700; color: var(--muted); }
+</style>

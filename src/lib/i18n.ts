@@ -62,6 +62,15 @@ export const UI = {
     share: 'Compartir',
     copyLink: 'Copiar link',
     copied: 'Link copiado',
+    tags: 'Etiquetas',
+    tagsTitle: 'Etiquetas | Daniel Segovia',
+    tagsDescription: 'Todos los temas del sitio: encontrá las notas sobre una empresa, una tecnología o un tema, sin importar su categoría.',
+    tagHeading: 'Notas sobre',
+    tagDescription: 'Todas las notas de Daniel Segovia etiquetadas con',
+    postsCount: 'notas',
+    postCount: 'nota',
+    allTags: 'Ver todas las etiquetas',
+    noTags: 'Todavía no hay etiquetas.',
   },
   en: {
     htmlLang: 'en',
@@ -123,6 +132,15 @@ export const UI = {
     share: 'Share',
     copyLink: 'Copy link',
     copied: 'Link copied',
+    tags: 'Tags',
+    tagsTitle: 'Tags | Daniel Segovia',
+    tagsDescription: 'Every topic on the site: find posts about a company, a technology or a subject, regardless of their category.',
+    tagHeading: 'Posts about',
+    tagDescription: 'All posts by Daniel Segovia tagged',
+    postsCount: 'posts',
+    postCount: 'post',
+    allTags: 'See all tags',
+    noTags: 'No tags yet.',
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
@@ -138,6 +156,7 @@ export const STATIC_PATHS = {
   contact: { es: '/contacto/', en: '/en/contact/' },
   privacy: { es: '/privacidad/', en: '/en/privacy/' },
   search: { es: '/buscar/', en: '/en/search/' },
+  tags: { es: '/etiquetas/', en: '/en/tags/' },
   rss: { es: '/rss.xml', en: '/en/rss.xml' },
 } as const;
 

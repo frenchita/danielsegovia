@@ -25,6 +25,11 @@ const body = (n, lang) =>
 <script>alert('esto debe desaparecer')</script><p onclick="x()">Párrafo final con un atributo peligroso que se elimina.</p>`
     : `<p>This is a <strong>sample article</strong> number ${n}, generated to test the design. It has <em>italics</em> and a <a href="https://developers.cloudflare.com/">link</a>.</p><h2>Context</h2><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>`;
 
+// Tags de ejemplo: se reparten entre notas de distintas categorías para probar los cruces.
+const TAGS_ES = ['OpenAI', 'Cloudflare', 'Brechas de datos', 'Liderazgo', 'Kubernetes', 'Startups'];
+const TAGS_EN = ['OpenAI', 'Cloudflare', 'Data breaches', 'Leadership', 'Kubernetes', 'Startups'];
+const pick = (list, n) => [list[n % list.length], list[(n + 2) % list.length]];
+
 let n = 0;
 for (const category of categories) {
   const count = category === 'tutoriales' ? 13 : 3;
@@ -43,6 +48,7 @@ for (const category of categories) {
           title: `Nota de ejemplo ${i} sobre ${category.replace(/-/g, ' ')}: un título bastante descriptivo`,
           excerpt: `Resumen breve de la nota ${i} de ${category}, pensado para la meta description y las tarjetas del home.`,
           content_html: body(n, 'es'),
+          tags: pick(TAGS_ES, n),
         },
         ...(withEn && {
           en: {
@@ -50,6 +56,7 @@ for (const category of categories) {
             title: `Sample post ${i} about ${category}: a fairly descriptive title`,
             excerpt: `Short summary of post ${i} in ${category}, used for the meta description and home cards.`,
             content_html: body(n, 'en'),
+            tags: pick(TAGS_EN, n),
           },
         }),
       },

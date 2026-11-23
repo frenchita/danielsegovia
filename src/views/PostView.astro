@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import CategoryGrid from '../components/CategoryGrid.astro';
+import TagList from '../components/TagList.astro';
 import { catStyle, type Locale } from '../lib/categories';
 import { categoryHasPage, categoryUrl, relatedEntries, type Entry } from '../lib/content';
 import { STATIC_PATHS, formatDate, t } from '../lib/i18n';
@@ -57,7 +58,7 @@ if (entry.sourceUrl) {
 >
   <Breadcrumbs crumbs={crumbs} label={ui.breadcrumb} />
 
-  <div>
+  <div class:list={['layout', { 'has-aside': entry.tags.length > 0 }]}>
     <article data-pagefind-body>
       <header>
         <h1 class="page-title">{entry.title}</h1>
@@ -99,6 +100,17 @@ if (entry.sourceUrl) {
         <button type="button" data-url={url} data-done={ui.copied} onclick="navigator.clipboard&&navigator.clipboard.writeText(this.dataset.url).then(()=>{this.textContent=this.dataset.done})">{ui.copyLink}</button>
       </div>
     </article>
+    {
+      entry.tags.length > 0 && (
+        <aside class="aside" aria-labelledby="tags-title" data-pagefind-ignore>
+          <div class="aside-inner">
+            <h2 id="tags-title" class="aside-title">{ui.tags}</h2>
+            <TagList tags={entry.tags} relTag />
+            <p class="all-tags"><a href={STATIC_PATHS.tags[locale]}>{ui.allTags} →</a></p>
+          </div>
+        </aside>
+      )
+    }
   </div>
 
   {
@@ -123,6 +135,16 @@ if (entry.sourceUrl) {
 </Base>
 
 <style>
+  /* Nota + barra lateral (tags). En mobile la barra queda debajo de la nota. */
+  .layout { display: grid; gap: 2rem; }
+  @media (min-width: 960px) {
+    .layout.has-aside { grid-template-columns: minmax(0, 1fr) 260px; gap: 3rem; }
+    .aside-inner { position: sticky; top: 1.25rem; }
+  }
+  .aside-inner { border-top: 3px solid var(--cat); padding-top: 0.9rem; }
+  .aside-title { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
+  .all-tags { margin: 1rem 0 0; font-size: 0.9rem; font-weight: 700; }
+  .all-tags a { color: var(--cat-ink); }
   .meta { font-size: 0.9rem; margin-top: -0.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; }
   .meta a { color: var(--fg); }
   .meta .cat-pill { background: var(--cat-tint); color: var(--cat-ink); font-weight: 700; text-decoration: none; padding: 0.1rem 0.7rem; border-radius: 999px; }

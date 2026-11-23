@@ -1,0 +1,13 @@
+---
+import TagView from '../../../../views/TagView.astro';
+import { tagPages } from '../../../../lib/content';
+
+export async function getStaticPaths() {
+  const pages = await tagPages('es');
+  return pages.filter((p) => p.page > 1).map((p) => ({ params: { tag: p.tag.slug, page: String(p.page) }, props: p }));
+}
+
+const { tag, page, totalPages, entries } = Astro.props;
+---
+
+<TagView locale="es" tag={tag} page={page} totalPages={totalPages} entries={entries} />

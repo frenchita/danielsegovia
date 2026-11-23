@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import TagList from '../components/TagList.astro';
+import type { Locale } from '../lib/categories';
+import { getTags, ogPath } from '../lib/content';
+import { STATIC_PATHS, t } from '../lib/i18n';
+import { abs, breadcrumbList, graph, WEBSITE_ID, type Crumb } from '../lib/schema';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const ui = t(locale);
+const path = STATIC_PATHS.tags[locale];
+const crumbs: Crumb[] = [
+  { name: ui.home, path: STATIC_PATHS.home[locale] },
+  { name: ui.tags, path },
+];
+const tags = (await getTags(locale)).map((g) => ({ slug: g.slug, name: g.name, url: g.url, count: g.entries.length }));
+const jsonld = graph([
+  { '@type': 'CollectionPage', '@id': `${abs(path)}#webpage`, url: abs(path), name: ui.tagsTitle, description: ui.tagsDescription, inLanguage: locale, isPartOf: { '@id': WEBSITE_ID } },
+  breadcrumbList(crumbs),
+]);
+---
+
+<Base locale={locale} title={ui.tagsTitle} description={ui.tagsDescription} path={path} alternates={STATIC_PATHS.tags} ogImage={ogPath(`${locale}/home`)} jsonld={jsonld} noindex={tags.length === 0}>
+  <Breadcrumbs crumbs={crumbs} label={ui.breadcrumb} />
+  <h1 class="page-title">{ui.tags}</h1>
+  <p class="lead">{ui.tagsDescription}</p>
+  {tags.length ? <TagList tags={tags} /> : <p class="muted">{ui.noTags}</p>}
+</Base>
+
+<style>
+  .lead { color: var(--muted); font-size: 1.05rem; max-width: 65ch; margin-bottom: 1.5rem; }
+</style>

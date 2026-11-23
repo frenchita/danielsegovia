@@ -1,6 +1,6 @@
 // Builders de datos estructurados (JSON-LD, schema.org).
 
-import type { Category, Locale } from './categories';
+import type { Locale } from './categories';
 import type { Entry } from './content';
 import { STATIC_PATHS, t } from './i18n';
 import { AUTHOR, SITE_NAME, SITE_URL, SOCIALS } from './site';
@@ -70,14 +70,15 @@ export function breadcrumbList(crumbs: Crumb[]): Json {
   };
 }
 
-export function collectionPage(locale: Locale, cat: Category, path: string, entries: Entry[], crumbs: Crumb[]): Json[] {
+/** Listado de notas: una categoría o un tag. */
+export function collectionPage(locale: Locale, info: { name: string; description: string }, path: string, entries: Entry[], crumbs: Crumb[]): Json[] {
   return [
     {
       '@type': 'CollectionPage',
       '@id': `${abs(path)}#webpage`,
       url: abs(path),
-      name: cat[locale].name,
-      description: cat[locale].description,
+      name: info.name,
+      description: info.description,
       inLanguage: locale,
       isPartOf: { '@id': WEBSITE_ID },
       breadcrumb: { '@id': `${abs(path)}#breadcrumb` },
@@ -106,6 +107,7 @@ export function blogPosting(entry: Entry, crumbs: Crumb[]): Json[] {
       dateModified: entry.updatedAt,
       inLanguage: entry.locale,
       articleSection: entry.category[entry.locale].name,
+      ...(entry.tags.length ? { keywords: entry.tags.map((t) => t.name) } : {}),
       wordCount: words,
       author: { '@id': PERSON_ID, '@type': 'Person', name: AUTHOR.name, url: abs(STATIC_PATHS.about[entry.locale]) },
       publisher: { '@id': PERSON_ID },

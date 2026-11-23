@@ -16,11 +16,17 @@ export interface Env {
 
 type Status = 'draft' | 'published';
 
+interface Tag {
+  slug: string;
+  name: string;
+}
+
 interface TranslationOut {
   slug: string;
   title: string;
   excerpt: string;
   content_html?: string;
+  tags: Tag[];
   updated_at: string;
 }
 
@@ -119,13 +125,29 @@ function groupRows(rows: Row[]): PostOut[] {
       map.set(r.id, p);
     }
     if (r.locale) {
-      const t: TranslationOut = { slug: r.slug, title: r.title, excerpt: r.excerpt, updated_at: r.t_updated_at };
+      const t: TranslationOut = { slug: r.slug, title: r.title, excerpt: r.excerpt, tags: [], updated_at: r.t_updated_at };
       if (r.content_html !== undefined) t.content_html = r.content_html;
       p.translations[r.locale] = t;
     }
   }
   return [...map.values()];
 }
+
+/** Agrega los tags de cada traducción (una sola consulta para todas las notas). */
+async function attachTags(env: Env, posts: PostOut[]): Promise<PostOut[]> {
+  if (posts.length === 0) return posts;
+  const byId = new Map(posts.map((p) => [p.id, p]));
+  const { results } = await env.DB.prepare(
+    `SELECT post_id, locale, slug, name FROM post_tags WHERE post_id IN (SELECT value FROM json_each(?)) ORDER BY post_id, locale, position`,
+  )
+    .bind(JSON.stringify([...byId.keys()]))
+    .all<{ post_id: number; locale: Locale; slug: string; name: string }>();
+  for (const r of results) byId.get(r.post_id)?.translations[r.locale]?.tags.push({ slug: r.slug, name: r.name });
+  return posts;
+}
+
+/** Filas → notas con sus traducciones y tags. */
+const loadPosts = (env: Env, rows: Row[]) => attachTags(env, groupRows(rows));
 
 const SELECT_FIELDS = (withContent: boolean) => `
   p.id, p.category_id, p.status, p.source_url, p.published_at, p.created_at, p.updated_at,
@@ -139,7 +161,7 @@ async function getPostById(env: Env, id: number, withContent = true): Promise<Po
   )
     .bind(id)
     .all<Row>();
-  return groupRows(results)[0] ?? null;
+  return (await loadPosts(env, results))[0] ?? null;
 }
 
 function parseLocale(value: string | null): Locale {
@@ -166,6 +188,45 @@ interface TranslationIn {
   title: string;
   excerpt: string;
   content_html: string;
+  /** undefined = no tocar los tags existentes; [] = quitarlos todos. */
+  tags?: Tag[];
+}
+
+const MAX_TAGS = 10;
+const TAG_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** "Brechas de datos" → "brechas-de-datos", "C#" → "c-sharp", "C++" → "c-plus-plus". */
+function tagSlug(name: string): string {
+  return name
+    .replace(/\+/g, ' plus ')
+    .replace(/#/g, ' sharp ')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/, '');
+}
+
+/** Acepta un array de strings o un string separado por comas. Deduplica por slug y conserva el orden. */
+function parseTags(v: unknown, field: string): Tag[] {
+  if (v === null) return [];
+  const list = typeof v === 'string' ? v.split(',') : v;
+  if (!Array.isArray(list)) throw new HttpError(422, `${field} debe ser un array de strings, p. ej. ["OpenAI", "Brechas de datos"]`);
+  const out: Tag[] = [];
+  const seen = new Set<string>();
+  for (const [i, raw] of list.entries()) {
+    if (typeof raw === 'string' && raw.trim() === '') continue;
+    const name = str(raw, `${field}[${i}]`, 2, 40).replace(/\s+/g, ' ');
+    const slug = tagSlug(name);
+    if (!TAG_SLUG_RE.test(slug)) throw new HttpError(422, `${field}[${i}] "${name}" debe tener al menos una letra o número`);
+    if (seen.has(slug)) continue;
+    seen.add(slug);
+    out.push({ slug, name });
+  }
+  if (out.length > MAX_TAGS) throw new HttpError(422, `${field} admite como máximo ${MAX_TAGS} tags`);
+  return out;
 }
 
 interface PostIn {
@@ -195,7 +256,9 @@ async function parseTranslation(v: unknown, locale: Locale): Promise<Translation
   const rawHtml = str(o.content_html ?? o.description, `translations.${locale}.content_html`, 1, 300_000);
   const content_html = await sanitizeHtml(rawHtml);
   if (textLength(content_html) < 50) throw new HttpError(422, `translations.${locale}.content_html quedó vacío o demasiado corto tras sanitizar`);
-  return { slug, title, excerpt, content_html };
+  const rawTags = o.tags ?? o.keywords;
+  const tags = rawTags === undefined ? undefined : parseTags(rawTags, `translations.${locale}.tags`);
+  return { slug, title, excerpt, content_html, tags };
 }
 
 async function parsePostInput(body: Record<string, unknown>, partial: boolean): Promise<PostIn> {
@@ -290,6 +353,7 @@ function translationStatements(env: Env, postId: number, translations: PostIn['t
     if (t === undefined) continue;
     if (t === null) {
       stmts.push(env.DB.prepare('DELETE FROM post_translations WHERE post_id = ? AND locale = ?').bind(postId, locale));
+      stmts.push(env.DB.prepare('DELETE FROM post_tags WHERE post_id = ? AND locale = ?').bind(postId, locale));
     } else {
       stmts.push(
         env.DB.prepare(
@@ -300,6 +364,12 @@ function translationStatements(env: Env, postId: number, translations: PostIn['t
              content_html = excluded.content_html, updated_at = excluded.updated_at`,
         ).bind(postId, locale, t.slug, t.title, t.excerpt, t.content_html, ts),
       );
+      if (t.tags !== undefined) {
+        stmts.push(env.DB.prepare('DELETE FROM post_tags WHERE post_id = ? AND locale = ?').bind(postId, locale));
+        t.tags.forEach((tag, i) =>
+          stmts.push(env.DB.prepare('INSERT INTO post_tags (post_id, locale, slug, name, position) VALUES (?, ?, ?, ?, ?)').bind(postId, locale, tag.slug, tag.name, i)),
+        );
+      }
     }
   }
   return stmts;
@@ -421,7 +491,7 @@ async function listPublished(env: Env, url: URL) {
   )
     .bind(at, perPage, offset)
     .all<Row>();
-  return json({ page, per_page: perPage, total, total_pages: Math.ceil(total / perPage), posts: groupRows(results) }, 200, PUBLIC_CACHE);
+  return json({ page, per_page: perPage, total, total_pages: Math.ceil(total / perPage), posts: await loadPosts(env, results) }, 200, PUBLIC_CACHE);
 }
 
 async function getPostBySlug(env: Env, url: URL, slug: string) {
@@ -441,7 +511,7 @@ async function getPostBySlug(env: Env, url: URL, slug: string) {
     .bind(post.category_id, post.id, locale, at)
     .all<Row>();
 
-  return json({ post, related: groupRows(results), categories: await latestByCategory(env, locale) }, 200, PUBLIC_CACHE);
+  return json({ post, related: await loadPosts(env, results), categories: await latestByCategory(env, locale) }, 200, PUBLIC_CACHE);
 }
 
 async function latestByCategory(env: Env, locale: Locale) {
@@ -455,7 +525,7 @@ async function latestByCategory(env: Env, locale: Locale) {
   )
     .bind(locale, at, locale, at)
     .all<Row>();
-  const latest = groupRows(results);
+  const latest = await loadPosts(env, results);
   return CATEGORIES.map((c) => ({
     id: c.id,
     key: c.key,
@@ -504,8 +574,52 @@ async function getCategory(env: Env, url: URL, slug: string) {
       per_page: perPage,
       total,
       total_pages: Math.ceil(total / perPage),
-      posts: groupRows(results),
+      posts: await loadPosts(env, results),
       categories: await latestByCategory(env, locale),
+    },
+    200,
+    PUBLIC_CACHE,
+  );
+}
+
+/** Tags con al menos una nota visible en ese idioma, de más a menos usados. */
+async function listTags(env: Env, url: URL) {
+  const locale = parseLocale(url.searchParams.get('locale'));
+  const { results } = await env.DB.prepare(
+    `SELECT pt.slug, MAX(pt.name) AS name, COUNT(*) AS count FROM post_tags pt JOIN posts p ON p.id = pt.post_id
+     WHERE pt.locale = ? AND ${VISIBLE}
+     GROUP BY pt.slug ORDER BY count DESC, pt.slug`,
+  )
+    .bind(locale, nowIso())
+    .all<{ slug: string; name: string; count: number }>();
+  return json({ locale, tags: results }, 200, PUBLIC_CACHE);
+}
+
+async function getTag(env: Env, url: URL, slug: string) {
+  const locale = parseLocale(url.searchParams.get('locale'));
+  const { page, perPage, offset } = parsePage(url, 50, 10);
+  const at = nowIso();
+  const head = await env.DB.prepare(
+    `SELECT MAX(pt.name) AS name, COUNT(*) AS n FROM post_tags pt JOIN posts p ON p.id = pt.post_id WHERE pt.locale = ? AND pt.slug = ? AND ${VISIBLE}`,
+  )
+    .bind(locale, slug, at)
+    .first<{ name: string | null; n: number }>();
+  if (!head?.n) throw new HttpError(404, 'Tag no encontrado');
+  const { results } = await env.DB.prepare(
+    `SELECT ${SELECT_FIELDS(false)} FROM post_tags pt JOIN posts p ON p.id = pt.post_id JOIN post_translations t ON t.post_id = p.id AND t.locale = pt.locale
+     WHERE pt.locale = ? AND pt.slug = ? AND ${VISIBLE}
+     ORDER BY p.published_at DESC, p.id DESC LIMIT ? OFFSET ?`,
+  )
+    .bind(locale, slug, at, perPage, offset)
+    .all<Row>();
+  return json(
+    {
+      tag: { slug, name: head.name },
+      page,
+      per_page: perPage,
+      total: head.n,
+      total_pages: Math.ceil(head.n / perPage),
+      posts: await loadPosts(env, results),
     },
     200,
     PUBLIC_CACHE,
@@ -526,7 +640,7 @@ async function adminList(req: Request, env: Env, url: URL) {
   )
     .bind(...binds, perPage, offset)
     .all<Row>();
-  return json({ page, per_page: perPage, posts: groupRows(results) }, 200, NO_STORE);
+  return json({ page, per_page: perPage, posts: await loadPosts(env, results) }, 200, NO_STORE);
 }
 
 async function adminGet(req: Request, env: Env, id: number) {
@@ -552,6 +666,8 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
   if (path === '/api/home' && m === 'GET') return getHome(env, url);
   if (path === '/api/categories' && m === 'GET') return listCategories();
   if ((match = path.match(/^\/api\/categories\/([a-z0-9-]+)$/)) && m === 'GET') return getCategory(env, url, match[1]);
+  if (path === '/api/tags' && m === 'GET') return listTags(env, url);
+  if ((match = path.match(/^\/api\/tags\/([a-z0-9-]+)$/)) && m === 'GET') return getTag(env, url, match[1]);
 
   if (path === '/api/posts') {
     if (m === 'GET') return listPublished(env, url);

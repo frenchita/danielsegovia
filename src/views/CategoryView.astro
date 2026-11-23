@@ -2,9 +2,10 @@
 import Base from '../layouts/Base.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import CategoryGrid from '../components/CategoryGrid.astro';
+import EntryList from '../components/EntryList.astro';
 import { catStyle, type Category, type Locale } from '../lib/categories';
 import { categoryHasPage, categoryUrl, ogPath, type Entry } from '../lib/content';
-import { STATIC_PATHS, formatDate, t } from '../lib/i18n';
+import { STATIC_PATHS, t } from '../lib/i18n';
 import { collectionPage, graph, type Crumb } from '../lib/schema';
 
 interface Props {
@@ -37,8 +38,7 @@ const title = page > 1 ? `${c.name} — ${ui.page} ${page} | Daniel Segovia` : `
 const description = page > 1 ? `${c.description} ${ui.page} ${page}.` : c.description;
 const prev = page > 1 ? categoryUrl(locale, category, page - 1) : undefined;
 const next = page < totalPages ? categoryUrl(locale, category, page + 1) : undefined;
-const jsonld = graph(collectionPage(locale, category, path, entries, crumbs));
-const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+const jsonld = graph(collectionPage(locale, { name: c.name, description: c.description }, path, entries, crumbs));
 ---
 
 <Base
@@ -56,55 +56,8 @@ const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
   <Breadcrumbs crumbs={crumbs} label={ui.breadcrumb} />
   <h1 class="page-title">{c.name}{page > 1 && <span class="muted"> · {ui.page} {page}</span>}</h1>
 
-  <div>
-    <div>
-      {page === 1 && <p class="lead">{c.description}</p>}
-      {
-        entries.length === 0 ? (
-          <p class="muted">{ui.noPosts}</p>
-        ) : (
-          <ol class="list">
-            {entries.map((e) => (
-              <li>
-                <article>
-                  <h2>
-                    <a href={e.url}>{e.title}</a>
-                  </h2>
-                  <p class="excerpt">{e.excerpt}</p>
-                  <p class="meta">
-                    {e.isNew && <span class="pill new">{ui.isNew}</span>}
-                    <time datetime={e.publishedAt}>{formatDate(e.publishedAt, locale)}</time>
-                    <span aria-hidden="true">·</span>
-                    <span>{e.readingMinutes} {ui.minRead}</span>
-                  </p>
-                </article>
-              </li>
-            ))}
-          </ol>
-        )
-      }
-
-      {
-        totalPages > 1 && (
-          <nav class="pager" aria-label={ui.pagination}>
-            {prev ? <a href={prev} rel="prev">← {ui.prev}</a> : <span />}
-            <ol>
-              {pages.map((p) => (
-                <li>
-                  {p === page ? (
-                    <span aria-current="page">{p}</span>
-                  ) : (
-                    <a href={categoryUrl(locale, category, p)} aria-label={`${ui.page} ${p}`}>{p}</a>
-                  )}
-                </li>
-              ))}
-            </ol>
-            {next ? <a href={next} rel="next">{ui.next} →</a> : <span />}
-          </nav>
-        )
-      }
-    </div>
-  </div>
+  {page === 1 && <p class="lead">{c.description}</p>}
+  <EntryList locale={locale} entries={entries} page={page} totalPages={totalPages} pageHref={(p) => categoryUrl(locale, category, p)} />
 
   <h2 class="section-title rainbow">{ui.moreCategories}</h2>
   <CategoryGrid locale={locale} level={3} />
@@ -112,21 +65,4 @@ const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
 <style>
   .lead { color: var(--muted); font-size: 1.05rem; max-width: 65ch; margin-bottom: 1.5rem; }
-  .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.75rem; }
-  article h2 { font-size: 1.3rem; margin-bottom: 0.4rem; }
-  article h2 a { text-decoration: none; }
-  article h2 a:hover { text-decoration: underline; color: var(--cat-ink); }
-  .list > li { border-left: 3px solid var(--cat-tint); padding-left: 1rem; transition: border-color 0.15s ease; }
-  .list > li:hover { border-left-color: var(--cat); }
-  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--muted); margin: 0; }
-  .pill { font-size: 0.72rem; font-weight: 700; padding: 0.05rem 0.55rem; border-radius: 999px; }
-  .pill.new { background: var(--cat-ink); color: #fff; }
-  .excerpt { margin-bottom: 0.35rem; max-width: 70ch; }
-  .pager { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; margin-top: 2.5rem; border: 1px solid var(--soft); border-radius: var(--radius); padding: 0.6rem 1rem; }
-  .pager > a:last-child { justify-self: end; }
-  .pager a { text-decoration: none; font-weight: 600; padding: 0.3rem 0.2rem; }
-  .pager ol { list-style: none; margin: 0; padding: 0; display: flex; gap: 0.25rem; flex-wrap: wrap; justify-content: center; }
-  .pager ol a, .pager ol span { display: inline-grid; place-items: center; min-width: 2.25rem; height: 2.25rem; border-radius: var(--radius); }
-  .pager ol span { background: var(--cat-ink); color: #fff; font-weight: 700; }
-  .pager a:hover { color: var(--cat-ink); }
 </style>
