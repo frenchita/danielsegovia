@@ -14,7 +14,9 @@ Content-Type: application/json; charset=utf-8
 
 El body tiene que ir en **UTF-8**. Si llega mal codificado, la API responde `422`.
 
-### Ejemplo completo
+### Ejemplo completo (español + inglés en el mismo POST)
+
+Un solo POST crea la nota en los dos idiomas: cada idioma va dentro de `translations` con su propio slug, título, resumen, tags y contenido. Las dos versiones quedan enlazadas entre sí (hreflang) y comparten categoría, fuente y fecha de publicación.
 
 ```json
 {
@@ -28,30 +30,66 @@ El body tiene que ir en **UTF-8**. Si llega mal codificado, la API responde `422
       "excerpt": "Una guía corta para encontrar archivos por nombre combinando ls y grep, con ejemplos que podés copiar y el equivalente en PowerShell.",
       "tags": ["Terminal", "Linux", "Productividad"],
       "content_html": "<p>Cuando una carpeta tiene cientos de archivos, buscar a ojo no escala. Con <code>ls</code> y <code>grep</code> lo resolvés en una línea.</p><h2>El comando básico</h2><p>Listá los archivos y filtrá los que contienen una palabra:</p><pre><code class=\"language-bash\">ls | grep \"hola\"</code></pre><p>El pipe (<code>|</code>) envía la salida de <code>ls</code> a <code>grep</code>, que muestra solo las líneas que coinciden.</p><h2>Variantes útiles</h2><ul><li><strong>Sin distinguir mayúsculas:</strong> agregá <code>-i</code>.</li><li><strong>Excluir coincidencias:</strong> usá <code>-v</code>.</li></ul><pre><code class=\"language-bash\">ls | grep -i \"informe\"\nls | grep -v \".tmp\"</code></pre><h2>En Windows</h2><p>El equivalente en PowerShell:</p><pre><code class=\"language-powershell\">Get-ChildItem | Where-Object { $_.Name -like \"*hola*\" }</code></pre><h2>Resumen</h2><table><thead><tr><th>Objetivo</th><th>Comando</th></tr></thead><tbody><tr><td>Filtrar por nombre</td><td><code>ls | grep \"texto\"</code></td></tr><tr><td>Ignorar mayúsculas</td><td><code>ls | grep -i \"texto\"</code></td></tr></tbody></table><p>Más opciones en el <a href=\"https://www.gnu.org/software/grep/manual/grep.html\">manual oficial de grep</a>.</p>"
+    },
+    "en": {
+      "slug": "how-to-filter-files-with-ls-and-grep",
+      "title": "How to filter files in the terminal with ls and grep",
+      "excerpt": "A short guide to finding files by name by combining ls and grep, with copy-ready examples and the PowerShell equivalent.",
+      "tags": ["Terminal", "Linux", "Productivity"],
+      "content_html": "<p>When a folder has hundreds of files, scanning it by eye does not scale. With <code>ls</code> and <code>grep</code> you can solve it in one line.</p><h2>The basic command</h2><p>List the files and keep the ones that contain a word:</p><pre><code class=\"language-bash\">ls | grep \"hello\"</code></pre><p>The pipe (<code>|</code>) sends the output of <code>ls</code> to <code>grep</code>, which prints only the matching lines.</p><h2>Useful variants</h2><ul><li><strong>Case-insensitive:</strong> add <code>-i</code>.</li><li><strong>Exclude matches:</strong> use <code>-v</code>.</li></ul><pre><code class=\"language-bash\">ls | grep -i \"report\"\nls | grep -v \".tmp\"</code></pre><h2>On Windows</h2><p>The PowerShell equivalent:</p><pre><code class=\"language-powershell\">Get-ChildItem | Where-Object { $_.Name -like \"*hello*\" }</code></pre><h2>Summary</h2><table><thead><tr><th>Goal</th><th>Command</th></tr></thead><tbody><tr><td>Filter by name</td><td><code>ls | grep \"text\"</code></td></tr><tr><td>Ignore case</td><td><code>ls | grep -i \"text\"</code></td></tr></tbody></table><p>More options in the <a href=\"https://www.gnu.org/software/grep/manual/grep.html\">official grep manual</a>.</p>"
     }
   }
 }
 ```
 
+Con este POST quedan publicadas, después de las 9:42 (hora de Argentina) del 24/11:
+
+- `https://danielsegovia.com/tutoriales/como-filtrar-archivos-con-ls-y-grep/`
+- `https://danielsegovia.com/en/tutorials/how-to-filter-files-with-ls-and-grep/`
+
+Sobre los idiomas:
+
+- **`es` es obligatorio; `en` es opcional.** Si mandás solo `es`, la nota existe solo en español. Podés sumar el inglés después reenviando el POST con el mismo slug en español más el bloque `en`.
+- **Cada idioma tiene su slug**, escrito en ese idioma y único dentro de él.
+- **Los tags van por idioma** y se escriben en ese idioma (`Productividad` / `Productivity`); los nombres propios quedan igual (`Linux`).
+- **La traducción tiene que ser completa**: mismo contenido y mismos bloques de código, adaptando los ejemplos cuando corresponda.
+- Para quitar la versión en inglés: `PATCH /api/posts/:id` con `{"translations": {"en": null}}`.
+
+### Categorías permitidas
+
+Una nota tiene una sola categoría. En `category` mandá el valor de la primera columna; también se acepta el slug en inglés (`tutorials`, `news`…) o el id numérico en `category_id`.
+
+| Valor (`category`) | id | Español: nombre y URL | Inglés: nombre y URL | Para qué tipo de nota |
+|---|---|---|---|---|
+| `tutoriales` | 1 | Tutoriales · `/tutoriales/` | Tutorials · `/en/tutorials/` | Guías paso a paso: desarrollo, herramientas, cloud, IA aplicada |
+| `actualidad` | 2 | Actualidad · `/actualidad/` | News · `/en/news/` | Noticias de tecnología explicadas con contexto |
+| `inteligencia-artificial` | 3 | Inteligencia Artificial · `/inteligencia-artificial/` | Artificial Intelligence · `/en/artificial-intelligence/` | Modelos, herramientas y casos de IA en productos y equipos |
+| `seguridad` | 4 | Seguridad · `/seguridad/` | Security · `/en/security/` | Ciberseguridad, vulnerabilidades y buenas prácticas |
+| `arquitectura` | 5 | Arquitectura · `/arquitectura/` | Architecture · `/en/architecture/` | Arquitectura de software, sistemas distribuidos, escalabilidad |
+| `negocios` | 6 | Negocios · `/negocios/` | Business · `/en/business/` | Estrategia, liderazgo, startups y el negocio de la tecnología |
+
+Cualquier otro valor devuelve `422` con la lista de categorías válidas. Si una nota encaja en dos, elegí la del enfoque principal y usá los tags para el resto. Por ejemplo, una vulnerabilidad en un modelo de IA va en `seguridad`, con el tag `Inteligencia artificial`.
+
 ### Campos
 
 | Campo | Obligatorio | Reglas |
 |---|---|---|
-| `category` | sí | `tutoriales`, `actualidad`, `inteligencia-artificial`, `seguridad`, `arquitectura`, `negocios` |
-| `publish_at` | no | ISO 8601 **con zona horaria** (`-03:00` o `Z`). Futuro = programada. Sin `status`, se asume `published`. Sin fecha, se publica ya |
-| `status` | no | `published` o `draft` (default `draft` si no hay `publish_at`) |
-| `source_url` | no | URL http(s) de la fuente principal |
-| `translations.es` | sí | `en` es opcional (misma estructura) |
-| `slug` | sí | 3–120 caracteres, `a-z`, `0-9` y guiones, único por idioma. Mismo slug = actualiza la nota |
-| `title` | sí | 5–200 caracteres (ideal: 50–70) |
-| `excerpt` | sí | 20–320 caracteres (ideal: 140–160). Es la meta description |
-| `tags` | no | Hasta 10 (ideal: 2–5), de 2 a 40 caracteres. Array o texto separado por comas |
-| `content_html` | sí | HTML con los tags permitidos (abajo). Mínimo ~50 caracteres de texto |
+| `category` | sí | Uno de los valores de la tabla de arriba |
+| `publish_at` | no | ISO 8601 **con zona horaria** (`-03:00` o `Z`). Fecha futura = programada. Si se envía sin `status`, se asume `published` |
+| `status` | no | `published` o `draft`. Sin `status` ni `publish_at`, la nota queda como **borrador**. Con `published` y sin fecha, se publica en el momento |
+| `source_url` | no | URL http(s) de la fuente principal (la comparten los dos idiomas) |
+| `translations.es` | sí | Versión en español |
+| `translations.en` | no | Versión en inglés, con la misma estructura |
+| `…slug` | sí | 3–120 caracteres, `a-z`, `0-9` y guiones, único por idioma. Reenviar el mismo slug en español actualiza la nota |
+| `…title` | sí | 5–200 caracteres (ideal: 50–70) |
+| `…excerpt` | sí | 20–320 caracteres (ideal: 140–160). Es la meta description |
+| `…tags` | no | Hasta 10 (ideal: 2–5), de 2 a 40 caracteres. Array o texto separado por comas |
+| `…content_html` | sí | HTML con los tags permitidos (abajo). Mínimo ~50 caracteres de texto |
 
 ### Respuestas
 
-- `201` creada · `200` actualizada (mismo slug).
-- `401` token inválido · `409` el slug lo usa otra nota · `422` validación (el mensaje indica el campo).
+- `201` creada · `200` actualizada (mismo slug en español).
+- `401` token inválido · `409` el slug de alguno de los dos idiomas lo usa otra nota · `422` validación (el mensaje indica el campo).
 - La nota aparece en el sitio cuando termina el rebuild (~1 min). Si está programada, poco después de su `publish_at` (el cron revisa cada 15 min).
 
 ---
