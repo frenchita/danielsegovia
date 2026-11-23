@@ -67,7 +67,6 @@ Base: `https://danielsegovia.com/api`. Las escrituras requieren `Authorization: 
   "category": "inteligencia-artificial",
   "status": "published",
   "publish_at": "2026-11-23T09:42:00-03:00",
-  "source_url": "https://fuente.com/nota-original",
   "translations": {
     "es": {
       "title": "Título de la nota",
@@ -85,7 +84,6 @@ Base: `https://danielsegovia.com/api`. Las escrituras requieren `Authorization: 
 | `category` o `category_id` | sí | key (`seguridad`), slug en inglés (`security`) o id (1–6) |
 | `status` | no | `draft` (default) o `published` |
 | `publish_at` | no | Fecha ISO 8601 **con zona horaria** (`-03:00` o `Z`); sin zona horaria se rechaza. Fecha futura = programada: la nota se ve después de esa hora (como mucho ~15 min de demora más el rebuild), pero en el sitio, el JSON-LD y el RSS figura la hora exacta de `publish_at`. Si se envía sin `status`, se asume `published`. Si se publica sin fecha, se usa la actual. `published_at` funciona como alias |
-| `source_url` | no | URL http(s) de la fuente |
 | `translations.es` | sí | `en` es opcional |
 | `slug` | sí | `a-z`, `0-9` y guiones, 3–120 caracteres, único por idioma |
 | `title` | sí | 5–200 caracteres |
@@ -100,7 +98,7 @@ Respuestas: `201` creada · `200` actualizada (mismo slug `es`) · `401` sin tok
 
 ### Otros endpoints de escritura (con token)
 
-- `PATCH /api/posts/:id`: actualización parcial (`status`, `category`, `publish_at`, `source_url`, `translations`). `"translations": { "en": null }` borra la traducción en inglés.
+- `PATCH /api/posts/:id`: actualización parcial (`status`, `category`, `publish_at`, `translations`). `"translations": { "en": null }` borra la traducción en inglés.
 - `DELETE /api/posts/:id`
 - `GET /api/posts/:id`: nota completa, incluidos borradores.
 - `GET /api/admin/posts?status=draft`: listado con borradores.

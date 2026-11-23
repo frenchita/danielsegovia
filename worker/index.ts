@@ -35,7 +35,6 @@ interface PostOut {
   category: string;
   category_id: number;
   status: Status;
-  source_url: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -46,7 +45,6 @@ interface Row {
   id: number;
   category_id: number;
   status: Status;
-  source_url: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -116,7 +114,6 @@ function groupRows(rows: Row[]): PostOut[] {
         category: categoryById(r.category_id)?.key ?? 'unknown',
         category_id: r.category_id,
         status: r.status,
-        source_url: r.source_url,
         published_at: r.published_at,
         created_at: r.created_at,
         updated_at: r.updated_at,
@@ -150,7 +147,7 @@ async function attachTags(env: Env, posts: PostOut[]): Promise<PostOut[]> {
 const loadPosts = (env: Env, rows: Row[]) => attachTags(env, groupRows(rows));
 
 const SELECT_FIELDS = (withContent: boolean) => `
-  p.id, p.category_id, p.status, p.source_url, p.published_at, p.created_at, p.updated_at,
+  p.id, p.category_id, p.status, p.published_at, p.created_at, p.updated_at,
   t.locale, t.slug, t.title, t.excerpt, ${withContent ? 't.content_html,' : ''} t.updated_at AS t_updated_at`;
 
 const VISIBLE = `p.status = 'published' AND p.published_at <= ?`;
@@ -232,7 +229,6 @@ function parseTags(v: unknown, field: string): Tag[] {
 interface PostIn {
   category_id?: number;
   status?: Status;
-  source_url?: string | null;
   published_at?: string | null;
   translations?: Partial<Record<Locale, TranslationIn | null>>;
 }
@@ -279,19 +275,6 @@ async function parsePostInput(body: Record<string, unknown>, partial: boolean): 
   if (body.status !== undefined) {
     if (body.status !== 'draft' && body.status !== 'published') throw new HttpError(422, 'status debe ser "draft" o "published"');
     out.status = body.status;
-  }
-
-  if (body.source_url !== undefined) {
-    if (body.source_url === null || body.source_url === '') out.source_url = null;
-    else {
-      try {
-        const u = new URL(String(body.source_url));
-        if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error();
-        out.source_url = u.toString();
-      } catch {
-        throw new HttpError(422, 'source_url debe ser una URL http(s) válida');
-      }
-    }
   }
 
   // `publish_at` es un alias de `published_at` (fecha en la que la nota se hace visible).
@@ -414,9 +397,9 @@ async function createOrUpsertPost(req: Request, env: Env, ctx: ExecutionContext)
   const publishedAt = input.published_at ?? (status === 'published' ? ts : null);
 
   const inserted = await env.DB.prepare(
-    `INSERT INTO posts (category_id, status, source_url, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+    `INSERT INTO posts (category_id, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id`,
   )
-    .bind(input.category_id, status, input.source_url ?? null, publishedAt, ts, ts)
+    .bind(input.category_id, status, publishedAt, ts, ts)
     .first<{ id: number }>();
   const id = inserted!.id;
 
@@ -443,10 +426,9 @@ async function updatePostById(env: Env, ctx: ExecutionContext, id: number, input
   if (status === 'published' && !publishedAt) publishedAt = ts;
 
   const stmts = [
-    env.DB.prepare(`UPDATE posts SET category_id = ?, status = ?, source_url = ?, published_at = ?, updated_at = ? WHERE id = ?`).bind(
+    env.DB.prepare(`UPDATE posts SET category_id = ?, status = ?, published_at = ?, updated_at = ? WHERE id = ?`).bind(
       input.category_id ?? before.category_id,
       status,
-      input.source_url !== undefined ? input.source_url : before.source_url,
       publishedAt,
       ts,
       id,

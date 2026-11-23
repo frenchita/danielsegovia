@@ -34,14 +34,6 @@ const share = [
 ];
 const showToc = entry.toc.length >= 3;
 const hasCode = entry.html.includes('class="code-block"');
-let sourceHost = '';
-if (entry.sourceUrl) {
-  try {
-    sourceHost = new URL(entry.sourceUrl).hostname.replace(/^www\./, '');
-  } catch {
-    sourceHost = '';
-  }
-}
 ---
 
 <Base
@@ -117,13 +109,6 @@ if (entry.sourceUrl) {
           </script>
         )
       }
-      {
-        entry.sourceUrl && (
-          <p class="source muted">
-            {ui.source}: <a href={entry.sourceUrl} target="_blank" rel="noopener">{sourceHost || entry.sourceUrl}</a>
-          </p>
-        )
-      }
       <div class="share" data-pagefind-ignore>
         <span class="share-title">{ui.share}</span>
         {share.map((s) => <a href={s.href} target="_blank" rel="noopener nofollow">{s.name}</a>)}
@@ -195,7 +180,6 @@ if (entry.sourceUrl) {
   .share a:hover, .share button:hover { background: var(--cat-ink); color: #fff; }
   .mins { margin-top: 0.6rem; font-size: 0.78rem; font-weight: 700; color: var(--cat-ink); }
   .lead { font-size: 1.15rem; color: var(--muted); max-width: 68ch; }
-  .source { font-size: 0.9rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--soft); }
 
   .prose { font-size: 1.075rem; line-height: 1.75; max-width: 70ch; overflow-wrap: break-word; }
   .prose :global(h2) { font-size: 1.45rem; margin: 2rem 0 0.75rem; }

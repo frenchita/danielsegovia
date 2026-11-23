@@ -41,7 +41,6 @@ for (const category of categories) {
       category,
       status: 'published',
       published_at: date,
-      source_url: 'https://example.com/fuente-original',
       translations: {
         es: {
           slug: `nota-de-ejemplo-${category}-${i}`,

@@ -16,27 +16,26 @@ El body tiene que ir en **UTF-8**. Si llega mal codificado, la API responde `422
 
 ### Ejemplo completo (español + inglés en el mismo POST)
 
-Un solo POST crea la nota en los dos idiomas: cada idioma va dentro de `translations` con su propio slug, título, resumen, tags y contenido. Las dos versiones quedan enlazadas entre sí (hreflang) y comparten categoría, fuente y fecha de publicación.
+Un solo POST crea la nota en los dos idiomas: cada idioma va dentro de `translations` con su propio slug, título, resumen, tags y contenido. Las dos versiones quedan enlazadas entre sí (hreflang) y comparten categoría y fecha de publicación.
 
 ```json
 {
   "category": "tutoriales",
   "publish_at": "2026-11-24T09:42:00-03:00",
-  "source_url": "https://www.gnu.org/software/grep/manual/grep.html",
   "translations": {
     "es": {
       "slug": "como-filtrar-archivos-con-ls-y-grep",
       "title": "Cómo filtrar archivos en la terminal con ls y grep",
       "excerpt": "Una guía corta para encontrar archivos por nombre combinando ls y grep, con ejemplos que podés copiar y el equivalente en PowerShell.",
       "tags": ["Terminal", "Linux", "Productividad"],
-      "content_html": "<p>Cuando una carpeta tiene cientos de archivos, buscar a ojo no escala. Con <code>ls</code> y <code>grep</code> lo resolvés en una línea.</p><h2>El comando básico</h2><p>Listá los archivos y filtrá los que contienen una palabra:</p><pre><code class=\"language-bash\">ls | grep \"hola\"</code></pre><p>El pipe (<code>|</code>) envía la salida de <code>ls</code> a <code>grep</code>, que muestra solo las líneas que coinciden.</p><h2>Variantes útiles</h2><ul><li><strong>Sin distinguir mayúsculas:</strong> agregá <code>-i</code>.</li><li><strong>Excluir coincidencias:</strong> usá <code>-v</code>.</li></ul><pre><code class=\"language-bash\">ls | grep -i \"informe\"\nls | grep -v \".tmp\"</code></pre><h2>En Windows</h2><p>El equivalente en PowerShell:</p><pre><code class=\"language-powershell\">Get-ChildItem | Where-Object { $_.Name -like \"*hola*\" }</code></pre><h2>Resumen</h2><table><thead><tr><th>Objetivo</th><th>Comando</th></tr></thead><tbody><tr><td>Filtrar por nombre</td><td><code>ls | grep \"texto\"</code></td></tr><tr><td>Ignorar mayúsculas</td><td><code>ls | grep -i \"texto\"</code></td></tr></tbody></table><p>Más opciones en el <a href=\"https://www.gnu.org/software/grep/manual/grep.html\">manual oficial de grep</a>.</p>"
+      "content_html": "<p>Cuando una carpeta tiene cientos de archivos, buscar a ojo no escala. Con <code>ls</code> y <code>grep</code> lo resolvés en una línea.</p><h2>El comando básico</h2><p>Listá los archivos y filtrá los que contienen una palabra:</p><pre><code class=\"language-bash\">ls | grep \"hola\"</code></pre><p>El pipe (<code>|</code>) envía la salida de <code>ls</code> a <code>grep</code>, que muestra solo las líneas que coinciden.</p><h2>Variantes útiles</h2><ul><li><strong>Sin distinguir mayúsculas:</strong> agregá <code>-i</code>.</li><li><strong>Excluir coincidencias:</strong> usá <code>-v</code>.</li></ul><pre><code class=\"language-bash\">ls | grep -i \"informe\"\nls | grep -v \".tmp\"</code></pre><h2>En Windows</h2><p>El equivalente en PowerShell:</p><pre><code class=\"language-powershell\">Get-ChildItem | Where-Object { $_.Name -like \"*hola*\" }</code></pre><h2>Resumen</h2><table><thead><tr><th>Objetivo</th><th>Comando</th></tr></thead><tbody><tr><td>Filtrar por nombre</td><td><code>ls | grep \"texto\"</code></td></tr><tr><td>Ignorar mayúsculas</td><td><code>ls | grep -i \"texto\"</code></td></tr></tbody></table>"
     },
     "en": {
       "slug": "how-to-filter-files-with-ls-and-grep",
       "title": "How to filter files in the terminal with ls and grep",
       "excerpt": "A short guide to finding files by name by combining ls and grep, with copy-ready examples and the PowerShell equivalent.",
       "tags": ["Terminal", "Linux", "Productivity"],
-      "content_html": "<p>When a folder has hundreds of files, scanning it by eye does not scale. With <code>ls</code> and <code>grep</code> you can solve it in one line.</p><h2>The basic command</h2><p>List the files and keep the ones that contain a word:</p><pre><code class=\"language-bash\">ls | grep \"hello\"</code></pre><p>The pipe (<code>|</code>) sends the output of <code>ls</code> to <code>grep</code>, which prints only the matching lines.</p><h2>Useful variants</h2><ul><li><strong>Case-insensitive:</strong> add <code>-i</code>.</li><li><strong>Exclude matches:</strong> use <code>-v</code>.</li></ul><pre><code class=\"language-bash\">ls | grep -i \"report\"\nls | grep -v \".tmp\"</code></pre><h2>On Windows</h2><p>The PowerShell equivalent:</p><pre><code class=\"language-powershell\">Get-ChildItem | Where-Object { $_.Name -like \"*hello*\" }</code></pre><h2>Summary</h2><table><thead><tr><th>Goal</th><th>Command</th></tr></thead><tbody><tr><td>Filter by name</td><td><code>ls | grep \"text\"</code></td></tr><tr><td>Ignore case</td><td><code>ls | grep -i \"text\"</code></td></tr></tbody></table><p>More options in the <a href=\"https://www.gnu.org/software/grep/manual/grep.html\">official grep manual</a>.</p>"
+      "content_html": "<p>When a folder has hundreds of files, scanning it by eye does not scale. With <code>ls</code> and <code>grep</code> you can solve it in one line.</p><h2>The basic command</h2><p>List the files and keep the ones that contain a word:</p><pre><code class=\"language-bash\">ls | grep \"hello\"</code></pre><p>The pipe (<code>|</code>) sends the output of <code>ls</code> to <code>grep</code>, which prints only the matching lines.</p><h2>Useful variants</h2><ul><li><strong>Case-insensitive:</strong> add <code>-i</code>.</li><li><strong>Exclude matches:</strong> use <code>-v</code>.</li></ul><pre><code class=\"language-bash\">ls | grep -i \"report\"\nls | grep -v \".tmp\"</code></pre><h2>On Windows</h2><p>The PowerShell equivalent:</p><pre><code class=\"language-powershell\">Get-ChildItem | Where-Object { $_.Name -like \"*hello*\" }</code></pre><h2>Summary</h2><table><thead><tr><th>Goal</th><th>Command</th></tr></thead><tbody><tr><td>Filter by name</td><td><code>ls | grep \"text\"</code></td></tr><tr><td>Ignore case</td><td><code>ls | grep -i \"text\"</code></td></tr></tbody></table>"
     }
   }
 }
@@ -77,7 +76,6 @@ Cualquier otro valor devuelve `422` con la lista de categorías válidas. Si una
 | `category` | sí | Uno de los valores de la tabla de arriba |
 | `publish_at` | no | ISO 8601 **con zona horaria** (`-03:00` o `Z`). Fecha futura = programada. Si se envía sin `status`, se asume `published` |
 | `status` | no | `published` o `draft`. Sin `status` ni `publish_at`, la nota queda como **borrador**. Con `published` y sin fecha, se publica en el momento |
-| `source_url` | no | URL http(s) de la fuente principal (la comparten los dos idiomas) |
 | `translations.es` | sí | Versión en español |
 | `translations.en` | no | Versión en inglés, con la misma estructura |
 | `…slug` | sí | 3–120 caracteres, `a-z`, `0-9` y guiones, único por idioma. Reenviar el mismo slug en español actualiza la nota |
@@ -164,11 +162,12 @@ Para el modelo que escribe las notas:
 - **Párrafos cortos** (2–4 frases). Listas para pasos o enumeraciones; tablas para comparaciones.
 - **Largo**: 300–600 palabras en notas de actualidad; 600–1200 en tutoriales.
 
-**Precisión y fuentes**
+**Redacción propia, sin fuentes**
 
-- Solo datos verificables en la fuente. Cifras, fechas y nombres exactos; si algo no está confirmado, decilo.
-- Enlazá la fuente principal en `source_url` y, si suma, dentro del texto con `<a>`.
-- No copies párrafos de la fuente: resumí con palabras propias. Citas textuales solo breves y en `<blockquote>`.
+- Las notas son redacciones propias: leés medios para informarte y después escribís con tu tono. No se citan ni se enlazan fuentes externas, y no existe campo para la fuente.
+- No menciones medios ni autores ("según X", "como publicó Y"). Contá el hecho y tu lectura.
+- Cifras, fechas y nombres exactos; si algo no está confirmado, decilo.
+- Nunca copies párrafos ni frases de lo que leíste: reescribí todo con palabras propias.
 
 **SEO**
 

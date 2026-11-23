@@ -27,7 +27,6 @@ export interface ApiPost {
   id: number;
   category: string;
   status: 'published';
-  source_url: string | null;
   published_at: string;
   updated_at: string;
   translations: Partial<Record<Locale, Translation>>;
@@ -42,7 +41,6 @@ export interface Entry {
   title: string;
   excerpt: string;
   html: string;
-  sourceUrl: string | null;
   publishedAt: string;
   updatedAt: string;
   url: string;
@@ -188,7 +186,6 @@ function toEntry(p: ApiPost, locale: Locale): Entry | null {
     toc,
     readingMinutes: readingMinutes(tr.content_html),
     isNew: BUILD_TIME - new Date(p.published_at).getTime() < NEW_WINDOW_MS,
-    sourceUrl: p.source_url,
     publishedAt: p.published_at,
     updatedAt: tr.updated_at > p.updated_at ? tr.updated_at : p.updated_at,
     url: postUrl(locale, category, tr.slug),

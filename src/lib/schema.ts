@@ -113,7 +113,6 @@ export function blogPosting(entry: Entry, crumbs: Crumb[]): Json[] {
       publisher: { '@id': PERSON_ID },
       isPartOf: { '@id': WEBSITE_ID },
       breadcrumb: { '@id': `${url}#breadcrumb` },
-      ...(entry.sourceUrl ? { isBasedOn: entry.sourceUrl } : {}),
       ...(Object.keys(entry.alternates).length > 1
         ? {
             workTranslation: Object.entries(entry.alternates)
