@@ -121,8 +121,32 @@ function slugify(text: string): string {
     .slice(0, 60) || 'seccion';
 }
 
-/** Tablas con scroll horizontal en mobile + anclas en los h2 para el índice. */
-function decorateHtml(html: string): { html: string; toc: { id: string; text: string }[] } {
+// Nombres legibles para la etiqueta de los bloques de código (class="language-xxx").
+const LANG_LABELS: Record<string, string> = {
+  bash: 'Bash', sh: 'Shell', shell: 'Shell', zsh: 'Zsh', console: 'Terminal', terminal: 'Terminal',
+  powershell: 'PowerShell', ps1: 'PowerShell', cmd: 'CMD', js: 'JavaScript', javascript: 'JavaScript',
+  ts: 'TypeScript', typescript: 'TypeScript', jsx: 'JSX', tsx: 'TSX', json: 'JSON', html: 'HTML', css: 'CSS',
+  sql: 'SQL', python: 'Python', py: 'Python', go: 'Go', rust: 'Rust', java: 'Java', php: 'PHP', ruby: 'Ruby',
+  'c#': 'C#', csharp: 'C#', cpp: 'C++', 'c++': 'C++', c: 'C', yaml: 'YAML', yml: 'YAML', toml: 'TOML',
+  xml: 'XML', dockerfile: 'Dockerfile', docker: 'Docker', nginx: 'Nginx', graphql: 'GraphQL', diff: 'Diff',
+  http: 'HTTP', text: 'Texto', plaintext: 'Texto', markdown: 'Markdown', md: 'Markdown', ini: 'INI', env: '.env',
+};
+
+const COPY_ICON = '<svg class="i-copy" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><svg class="i-done" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+/** Envuelve cada <pre> en una caja con el lenguaje y un botón para copiar el código. */
+function decorateCode(html: string, locale: Locale): string {
+  const t = locale === 'es' ? { copy: 'Copiar', done: 'Copiado', label: 'Copiar código', code: 'Código' } : { copy: 'Copy', done: 'Copied', label: 'Copy code', code: 'Code' };
+  return html.replace(/<pre(\s[^>]*)?>([\s\S]*?)<\/pre>/g, (_m, attrs: string | undefined, inner: string) => {
+    const lang = (attrs?.match(/language-([a-z0-9+#-]+)/i) ?? inner.match(/^\s*<code[^>]*class="language-([a-z0-9+#-]+)"/i))?.[1]?.toLowerCase();
+    const name = lang ? LANG_LABELS[lang] ?? lang : t.code;
+    const pre = `<pre${lang ? ` class="language-${lang}"` : ''}>${inner}</pre>`;
+    return `<div class="code-block"><div class="code-head"><span class="code-lang">${name}</span><button type="button" class="copy-code" aria-label="${t.label}" data-done="${t.done}">${COPY_ICON}<span>${t.copy}</span></button></div>${pre}</div>`;
+  });
+}
+
+/** Tablas con scroll horizontal en mobile + anclas en los h2 para el índice + bloques de código. */
+function decorateHtml(html: string, locale: Locale): { html: string; toc: { id: string; text: string }[] } {
   const toc: { id: string; text: string }[] = [];
   const used = new Set<string>();
   const out = html
@@ -138,7 +162,7 @@ function decorateHtml(html: string): { html: string; toc: { id: string; text: st
       toc.push({ id, text });
       return `<h2 id="${id}">${inner}</h2>`;
     });
-  return { html: out, toc };
+  return { html: decorateCode(out, locale), toc };
 }
 
 const readingMinutes = (html: string) => Math.max(1, Math.round(stripTags(html).split(/\s+/).filter(Boolean).length / 200));
@@ -152,7 +176,7 @@ function toEntry(p: ApiPost, locale: Locale): Entry | null {
     const other = p.translations[l];
     if (other) alternates[l] = postUrl(l, category, other.slug);
   }
-  const { html, toc } = decorateHtml(tr.content_html);
+  const { html, toc } = decorateHtml(tr.content_html, locale);
   return {
     id: p.id,
     locale,

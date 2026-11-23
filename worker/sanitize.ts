@@ -9,7 +9,8 @@ const ALLOWED: Record<string, readonly string[]> = {
   h2: ['id'], h3: ['id'], h4: ['id'],
   ul: [], ol: ['start'], li: [],
   blockquote: ['cite'], q: ['cite'], cite: [],
-  code: [], pre: [], kbd: [], abbr: ['title'],
+  // class solo se acepta como "language-xxx" (lenguaje del bloque de código, ver abajo).
+  code: ['class'], pre: ['class'], kbd: [], abbr: ['title'],
   table: [], caption: [], thead: [], tbody: [], tfoot: [], tr: [],
   th: ['colspan', 'rowspan', 'scope'], td: ['colspan', 'rowspan'],
   figure: [], figcaption: [],
@@ -28,6 +29,7 @@ const DROP = new Set([
 ]);
 
 const SITE_HOST = 'danielsegovia.com';
+const LANG_CLASS_RE = /^language-[a-z0-9+#-]{1,20}$/i;
 
 function safeHref(raw: string): string | null {
   const href = raw.trim();
@@ -84,6 +86,12 @@ export async function sanitizeHtml(input: string): Promise<string> {
               el.setAttribute('rel', 'noopener noreferrer');
             }
           }
+        }
+        if (tag === 'code' || tag === 'pre') {
+          // Única clase permitida: el lenguaje del bloque, p. ej. "language-bash".
+          const lang = (el.getAttribute('class') ?? '').split(/\s+/).find((c) => LANG_CLASS_RE.test(c));
+          if (lang) el.setAttribute('class', lang.toLowerCase());
+          else el.removeAttribute('class');
         }
         if (tag === 'blockquote' || tag === 'q') {
           const cite = el.getAttribute('cite');

@@ -96,6 +96,8 @@ Respuestas: `201` creada · `200` actualizada (mismo slug `es`) · `401` sin tok
 
 **HTML permitido:** `p br hr strong em u s del mark sub sup small a h2 h3 h4 ul ol li blockquote q cite code pre kbd abbr table caption thead tbody tfoot tr th td figure figcaption dl dt dd`. `b`/`i`/`h1` se convierten en `strong`/`em`/`h2`. Se eliminan scripts, estilos, iframes, imágenes, formularios, comentarios y todos los atributos salvo `href`/`title` (links), `colspan`/`rowspan`/`scope` (tablas), `start` (ol), `id` (headings) y `cite`. Los links externos se abren en una pestaña nueva con `rel="noopener noreferrer"`.
 
+**Bloques de código:** `<pre><code class="language-bash">…</code></pre>` se muestra en una caja con el lenguaje y un botón **Copiar** (la única clase que se conserva es `language-xxx`). La guía completa de publicación y redacción, con un ejemplo de POST, está en [docs/guia-publicacion.md](docs/guia-publicacion.md).
+
 ### Otros endpoints de escritura (con token)
 
 - `PATCH /api/posts/:id`: actualización parcial (`status`, `category`, `publish_at`, `source_url`, `translations`). `"translations": { "en": null }` borra la traducción en inglés.

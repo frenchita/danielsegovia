@@ -33,6 +33,7 @@ const share = [
   { name: 'WhatsApp', href: `https://wa.me/?text=${encodeURIComponent(`${entry.title} ${url}`)}` },
 ];
 const showToc = entry.toc.length >= 3;
+const hasCode = entry.html.includes('class="code-block"');
 let sourceHost = '';
 if (entry.sourceUrl) {
   try {
@@ -88,6 +89,35 @@ if (entry.sourceUrl) {
       }
       <div class="prose" set:html={entry.html} />
       {
+        hasCode && (
+          <script is:inline>
+            // Copiar bloques de código (solo se incluye en notas con código).
+            // Usa la API del portapapeles y, si el navegador la bloquea, el método clásico.
+            document.addEventListener('click', function (e) {
+              var b = e.target.closest && e.target.closest('.copy-code');
+              if (!b) return;
+              var text = b.closest('.code-block').querySelector('pre').textContent.replace(/\n$/, '');
+              function done() {
+                var s = b.querySelector('span'), prev = s.textContent;
+                b.classList.add('done'); s.textContent = b.dataset.done;
+                setTimeout(function () { b.classList.remove('done'); s.textContent = prev; }, 2000);
+              }
+              function fallback() {
+                var t = document.createElement('textarea');
+                t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+                document.body.appendChild(t); t.select();
+                var ok = false;
+                try { ok = document.execCommand('copy'); } catch (err) {}
+                t.remove();
+                if (ok) done();
+              }
+              if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+              else fallback();
+            });
+          </script>
+        )
+      }
+      {
         entry.sourceUrl && (
           <p class="source muted">
             {ui.source}: <a href={entry.sourceUrl} target="_blank" rel="noopener">{sourceHost || entry.sourceUrl}</a>
@@ -136,7 +166,8 @@ if (entry.sourceUrl) {
 
 <style>
   /* Nota + barra lateral (tags). En mobile la barra queda debajo de la nota. */
-  .layout { display: grid; gap: 2rem; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  .layout > :global(*) { min-width: 0; } /* el código largo hace scroll en su caja, no ensancha la página */
   @media (min-width: 960px) {
     .layout.has-aside { grid-template-columns: minmax(0, 1fr) 260px; gap: 3rem; }
     .aside-inner { position: sticky; top: 1.25rem; }
@@ -179,7 +210,19 @@ if (entry.sourceUrl) {
   .prose :global(blockquote p:last-child) { margin-bottom: 0; }
   .prose :global(code) { font-family: var(--mono); font-size: 0.9em; background: var(--code-bg); padding: 0.12em 0.35em; border-radius: 4px; }
   .prose :global(pre) { background: var(--code-bg); padding: 1rem; border-radius: var(--radius); overflow-x: auto; line-height: 1.5; }
-  .prose :global(pre code) { background: none; padding: 0; }
+  .prose :global(pre code) { background: none; padding: 0; font-size: 0.88em; }
+  /* Bloque de código con cabecera (lenguaje + copiar) */
+  .prose :global(.code-block) { margin: 1.5rem 0; border-radius: var(--radius); overflow: hidden; background: #16181d; color: #e6e6e6; }
+  .prose :global(.code-head) { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.35rem 0.5rem 0.35rem 1rem; background: #22252c; border-bottom: 1px solid #2f333b; }
+  .prose :global(.code-lang) { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.04em; color: #a9b1bd; }
+  .prose :global(.copy-code) { display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2rem; padding: 0.25rem 0.6rem; font: inherit; font-size: 0.8rem; font-weight: 700; color: #d7dbe1; background: transparent; border: 1px solid #3a3f48; border-radius: 6px; cursor: pointer; }
+  .prose :global(.copy-code:hover) { background: #2d3139; color: #fff; }
+  .prose :global(.copy-code .i-done) { display: none; }
+  .prose :global(.copy-code.done) { color: #7ee2a8; border-color: #3f7a59; }
+  .prose :global(.copy-code.done .i-copy) { display: none; }
+  .prose :global(.copy-code.done .i-done) { display: block; }
+  .prose :global(.code-block pre) { margin: 0; background: transparent; color: inherit; border-radius: 0; padding: 1rem 1.1rem; }
+  .prose :global(.code-block pre code) { color: inherit; white-space: pre; }
   .prose :global(hr) { border: 0; border-top: 1px solid var(--soft); margin: 2rem 0; }
   .prose :global(.table-wrap) { overflow-x: auto; margin: 1.5rem 0; }
   .prose :global(table) { border-collapse: collapse; width: 100%; font-size: 0.95rem; }

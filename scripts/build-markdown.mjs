@@ -25,7 +25,8 @@ function extractMain(html) {
   main = main
     .replace(/<aside class="ads[\s\S]*?<\/aside>/gi, '') // anuncios
     .replace(/<div class="share[\s\S]*?<\/div>/gi, '') // botones de compartir
-    .replace(/<div id="search"[\s\S]*?<\/div>/gi, ''); // widget de búsqueda
+    .replace(/<div id="search"[\s\S]*?<\/div>/gi, '') // widget de búsqueda
+    .replace(/<div class="code-head">[\s\S]*?<\/button><\/div>/gi, ''); // cabecera de bloques de código (lenguaje + copiar)
   // Links relativos → absolutos, para que el Markdown sirva fuera del sitio.
   return main.replace(/href="\/(?!\/)/g, `href="${SITE}/`);
 }
