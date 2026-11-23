@@ -48,10 +48,11 @@ Páginas de confianza: `/contacto/` y `/privacidad/` (y `/en/contact/`, `/en/pri
 
 - `/llms.txt`: qué es el sitio, **cuándo usarlo**, cómo consultarlo, categorías y notas recientes. También en `/?mode=agent`.
 - **Markdown por negociación**: cualquier página responde Markdown con `Accept: text/markdown`, y está disponible en `<url>index.md`. Lo genera `scripts/build-markdown.mjs` después del build. Cada página HTML enlaza su versión Markdown con `<link rel="alternate" type="text/markdown">`, y `public/_headers` agrega `Vary: Accept`.
-- Las rutas inexistentes devuelven un **404 real** con links al sitemap, `llms.txt` y RSS.
-- **Sin Worker por visita**: la negociación la hacen dos URL Rewrite Rules de la zona (Cloudflare → Rules → Transform Rules), así que el Worker sigue corriendo solo para `/api/*`:
-  1. *Markdown para agentes*: si `Accept` contiene `text/markdown` y la ruta termina en `/` (y no es `/api/`), la ruta se reescribe a `concat(ruta, "index.md")`.
-  2. *Vista para agentes*: `/` con `mode=agent` en la query se reescribe a `/llms.txt`.
+- Las rutas inexistentes devuelven un **404 real**: en HTML para navegadores y en Markdown (`text/markdown`) para agentes, con links al sitemap, `llms.txt` y RSS.
+- **Sin Worker por visita**: las URL Rewrite Rules de la zona (Cloudflare → Rules → Transform Rules) resuelven todo en el borde:
+  1. *Páginas de confianza*: `/about`, `/contact` y `/privacy` responden 200 con el contenido de `/sobre-mi/`, `/contacto/` y `/privacidad/` (canonical a la página en español).
+  2. *Vista para agentes*: `/` con `mode=agent` → `/llms.txt`.
+  3. *Markdown para agentes* (va última): si `Accept` contiene `text/markdown` y la ruta no tiene extensión ni es `/api/`, se reescribe a `/api/md?p=<ruta>`. El Worker **solo corre en esos pedidos**: devuelve el `index.md` de la página o un 404 en Markdown.
 
 Categorías: `tutoriales` (tutorials), `actualidad` (news), `inteligencia-artificial` (artificial-intelligence), `seguridad` (security), `arquitectura` (architecture), `negocios` (business).
 

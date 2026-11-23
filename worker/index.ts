@@ -651,6 +651,53 @@ async function adminGet(req: Request, env: Env, id: number) {
 }
 
 // ---------------------------------------------------------------------------
+// Markdown para agentes
+// ---------------------------------------------------------------------------
+// Una URL Rewrite Rule de la zona envía a /api/md?p=<ruta> solo los pedidos con
+// Accept: text/markdown, así que el Worker no corre en las visitas normales.
+// Devuelve el index.md estático de la página, o un 404 en Markdown si no existe.
+
+const MD_HEADERS = {
+  'content-type': 'text/markdown; charset=utf-8',
+  'cache-control': 'public, max-age=300',
+  vary: 'Accept',
+};
+
+// Rutas servidas por reescritura (páginas de confianza) → página real.
+const MD_ALIASES: Record<string, string> = { '/about': '/sobre-mi', '/contact': '/contacto', '/privacy': '/privacidad' };
+
+const MD_NOT_FOUND = (p: string) => `---
+title: "Página no encontrada / Page not found"
+status: 404
+---
+
+# Página no encontrada
+
+La ruta \`${p}\` no existe en danielsegovia.com o cambió de dirección.
+
+The path \`${p}\` does not exist on danielsegovia.com or has moved.
+
+## Dónde seguir / Where to go next
+
+- [Índice para agentes (llms.txt)](https://danielsegovia.com/llms.txt)
+- [Sitemap](https://danielsegovia.com/sitemap.xml)
+- [Inicio](https://danielsegovia.com/) · [Home (English)](https://danielsegovia.com/en/)
+- [Búsqueda](https://danielsegovia.com/buscar/)
+- [RSS](https://danielsegovia.com/rss.xml)
+`;
+
+async function serveMarkdown(req: Request, env: Env, url: URL): Promise<Response> {
+  let p = url.searchParams.get('p') || '/';
+  if (!p.startsWith('/') || p.includes('..') || p.length > 300) p = '/';
+  const clean = p.replace(/\/+$/, '') || '/';
+  const target = MD_ALIASES[clean] ?? clean;
+  const asset = await env.ASSETS.fetch(new Request(new URL(`${target === '/' ? '' : target}/index.md`, url.origin)));
+  const body = req.method === 'HEAD' ? null : undefined;
+  if (asset.ok) return new Response(body === null ? null : asset.body, { status: 200, headers: MD_HEADERS });
+  return new Response(body === null ? null : MD_NOT_FOUND(clean), { status: 404, headers: MD_HEADERS });
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -660,6 +707,7 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
   const m = req.method;
   let match: RegExpMatchArray | null;
 
+  if (path === '/api/md' && (m === 'GET' || m === 'HEAD')) return serveMarkdown(req, env, url);
   if (path === '/api/health' && m === 'GET') {
     return json({ ok: true, service: 'danielsegovia-api', time: nowIso() }, 200, NO_STORE);
   }
