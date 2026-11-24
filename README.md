@@ -12,6 +12,7 @@ Visitante ──► Cloudflare edge ──► HTML estático (sin JS, CSS inline
 - Las páginas se generan en el build; el Worker solo corre para `/api/*`.
 - Al publicar/editar/borrar una nota visible, la API dispara el Deploy Hook y el sitio se regenera (~1 min).
 - Un cron cada 15 minutos regenera el sitio si alguna nota programada (`publish_at` futuro) pasó su hora. La marca de la última revisión se guarda en D1, así que ninguna nota se pierde aunque falle una ejecución.
+- El mismo cron avisa a **IndexNow** (Bing, Yandex…) las URL publicadas o editadas, con 10 min de margen para que el deploy termine. La clave está en `src/lib/site.ts` (`INDEXNOW_KEY`) y se verifica en `/<clave>.txt` (`public/`).
 - Si la API no responde durante el build, **el build falla** (nunca se publica un sitio vacío).
 
 ## Estructura

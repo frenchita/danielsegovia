@@ -1,4 +1,5 @@
 import { CATEGORIES, LOCALES, categoryById, categoryByKey, type Locale } from '../src/lib/categories';
+import { INDEXNOW_KEY, SITE_URL } from '../src/lib/site';
 import { sanitizeHtml, textLength } from './sanitize';
 
 export interface Env {
@@ -757,5 +758,69 @@ export default {
         .bind(now)
         .run();
     }
+    try {
+      await pingIndexNow(env);
+    } catch (e) {
+      console.error('IndexNow', e);
+    }
   },
 } satisfies ExportedHandler<Env>;
+
+// ---------------------------------------------------------------------------
+// IndexNow (Bing, Yandex, Seznam, Naver…)
+// ---------------------------------------------------------------------------
+
+/** Margen para que el rebuild/deploy termine antes de avisar (si no, la URL todavía da 404). */
+const INDEXNOW_LAG_MS = 10 * 60 * 1000;
+
+/**
+ * Avisa a IndexNow las URL de las traducciones que pasaron a ser visibles o se editaron en la ventana
+ * (última marca, ahora − margen]. "Visible desde" = el mayor entre published_at y el updated_at de la
+ * traducción. La marca `last_indexnow_ping` solo avanza si IndexNow aceptó el envío.
+ */
+async function pingIndexNow(env: Env) {
+  const cutoff = new Date(Date.now() - INDEXNOW_LAG_MS).toISOString();
+  const last =
+    (await env.DB.prepare(`SELECT value FROM site_state WHERE key = 'last_indexnow_ping'`).first<{ value: string }>())?.value ??
+    new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  if (last >= cutoff) return;
+
+  const { results } = await env.DB.prepare(
+    `SELECT p.category_id, t.locale, t.slug
+       FROM posts p JOIN post_translations t ON t.post_id = p.id
+      WHERE p.status = 'published' AND p.published_at IS NOT NULL
+        AND MAX(p.published_at, t.updated_at) > ? AND MAX(p.published_at, t.updated_at) <= ?
+      LIMIT 10000`,
+  )
+    .bind(last, cutoff)
+    .all<{ category_id: number; locale: Locale; slug: string }>();
+
+  const urls: string[] = [];
+  for (const r of results) {
+    const cat = categoryById(r.category_id);
+    if (!cat) continue;
+    urls.push(r.locale === 'es' ? `${SITE_URL}/${cat.es.slug}/${r.slug}/` : `${SITE_URL}/en/${cat.en.slug}/${r.slug}/`);
+  }
+
+  if (urls.length > 0) {
+    const res = await fetch('https://api.indexnow.org/indexnow', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({
+        host: new URL(SITE_URL).host,
+        key: INDEXNOW_KEY,
+        keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
+        urlList: urls,
+      }),
+    });
+    if (!res.ok) {
+      console.error(`IndexNow respondió ${res.status}: ${await res.text()}`);
+      return;
+    }
+    console.log(`IndexNow: ${urls.length} URL(s) enviadas`);
+  }
+
+  await env.DB.prepare(`INSERT INTO site_state (key, value) VALUES ('last_indexnow_ping', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`)
+    .bind(cutoff)
+    .run();
+}

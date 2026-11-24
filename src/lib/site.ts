@@ -2,6 +2,8 @@
 
 export const SITE_URL = 'https://danielsegovia.com';
 export const SITE_NAME = 'Daniel Segovia';
+/** Clave de IndexNow (pública por diseño): se verifica en `${SITE_URL}/${INDEXNOW_KEY}.txt` (public/). */
+export const INDEXNOW_KEY = '7a669adce612802c5669089207e4bd22';
 export const TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 export const AUTHOR = {
