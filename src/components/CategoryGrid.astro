@@ -23,10 +23,11 @@ const H = `h${level}` as 'h2' | 'h3';
         </H>
         {b.latest ? (
           <>
-            <p class="label">
-              {ui.latestPost}
-              {b.fallback && <span class="badge" lang={locale}>{ui.inSpanish}</span>}
-            </p>
+            {b.fallback && (
+              <p class="label">
+                <span class="badge" lang={locale}>{ui.inSpanish}</span>
+              </p>
+            )}
             <a class="post" href={b.latest.url} hreflang={b.fallback ? 'es' : undefined} lang={b.fallback ? 'es' : undefined}>
               {b.latest.title}
             </a>
